@@ -42,3 +42,7 @@ test('staged checks cannot be bypassed by repairing only the working copy', () =
   });
   assert.notEqual(result.status, 0);
 });
+test('workflow actions require immutable commit references', () => {
+  assert.notEqual(fixture({ '.github/workflows/check.yml': 'steps:\n  - uses: actions/checkout@v4\n' }).status, 0);
+  assert.equal(fixture({ '.github/workflows/check.yml': 'steps:\n  - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262\n' }).status, 0);
+});
