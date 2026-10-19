@@ -18,7 +18,9 @@ trabajo. Este documento describe trabajo futuro, no capacidades disponibles.
 - HMR directo; sin Docker, certificados locales ni build previo del backend
   para trabajar en frontend.
 - API local con proxy de Vite; fixtures explícitos y deterministas para diseño.
-- CI en GitHub sin secretos de producción ni despliegue implícito.
+- [x] CI de higiene del repositorio y secretos, sin despliegue implícito.
+- [x] Flujo protegido de ramas, asignación de PRs y proyecto de tracking.
+- CI de aplicación (lint, tipos, tests y build) al implementar el workspace.
 - Aceptación: una instalación limpia inicia ambas interfaces por separado,
   refleja cambios con HMR y construye cada aplicación de manera independiente.
 
