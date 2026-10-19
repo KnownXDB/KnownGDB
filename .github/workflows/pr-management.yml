@@ -1,0 +1,26 @@
+name: PR management
+
+# Metadata only: no checkout, dependencies, scripts or artifacts from the PR.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited, ready_for_review]
+    branches: [develop, main]
+  issues:
+    types: [opened, reopened]
+
+permissions: {}
+
+jobs:
+  assign:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Assign the maintainer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          number=$(jq -r '.pull_request.number // .issue.number' "$GITHUB_EVENT_PATH")
+          gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$number/assignees" -f 'assignees[]=mvuljevas' --silent

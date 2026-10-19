@@ -106,3 +106,8 @@ auth-state*.json
 playwright/.auth/
 uploads/
 artifacts/
+
+# Local scanning and diagnostics
+*secret-scan-report*
+gitleaks-report.*
+*.sarif

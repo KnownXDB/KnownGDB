@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main|refs/heads/develop)
+      echo 'Protected branches accept pull requests only.' >&2
+      exit 1
+      ;;
+  esac
+done
+node scripts/repository-policy.mjs
+node scripts/scan-secrets.mjs
