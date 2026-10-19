@@ -20,6 +20,10 @@ aprobación independiente de su propio cambio. Mientras haya un único mantenedo
 verificar CI y documentar revisión manual; añadir revisión independiente al
 incorporar otro mantenedor. Escritura solo para mantenedores autorizados.
 
-Las protecciones reales se verifican en GitHub; esta revisión no las cambia.
+`develop` es la rama predeterminada; recibe trabajo mediante PRs y verificaciones.
+`main` recibe promociones estables desde `develop`, con evidencia de pruebas del
+commit integrado. No hay merge ni despliegue automáticos. Consultar
+[flujo de Git](docs/GIT-WORKFLOW.md) y [ADR 0002](docs/adr/0002-repository-governance.md).
+Las protecciones reales y su aplicación a administradores se verifican en GitHub.
 Trato respetuoso y sin acoso ni discriminación. No publicar secretos, contenido
 externo ni información privada como parte de una contribución.

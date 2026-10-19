@@ -1,0 +1,63 @@
+name: Repository checks
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repository-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository-policy:
+    name: repository-policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - run: node scripts/repository-policy.mjs
+      - run: node --test tests/repository-policy.test.mjs
+      - run: git diff --check
+  secret-scan:
+    name: secret-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - run: node scripts/scan-secrets.mjs
+  branch-policy:
+    name: branch-policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Enforce integration and promotion
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != pull_request ]; then echo 'Branch policy applies to PRs.'; exit 0; fi
+          base=$(jq -r '.pull_request.base.ref' "$GITHUB_EVENT_PATH")
+          head=$(jq -r '.pull_request.head.ref' "$GITHUB_EVENT_PATH")
+          source=$(jq -r '.pull_request.head.repo.full_name' "$GITHUB_EVENT_PATH")
+          sha=$(jq -r '.pull_request.head.sha' "$GITHUB_EVENT_PATH")
+          if [ "$base" = main ]; then
+            [ "$source" = "$GITHUB_REPOSITORY" ] && [ "$head" = develop ] || { echo 'main accepts develop promotions only.'; exit 1; }
+            runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/repository-checks.yml/runs?branch=develop&event=push&head_sha=$sha&per_page=100")
+            echo "$runs" | jq -e '.workflow_runs | sort_by(.created_at) | last | .conclusion == "success"' >/dev/null || { echo 'The exact develop commit needs successful integration CI before promotion.'; exit 1; }
+          else
+            echo "$head" | grep -Eq '^(feature|fix|chore|docs|refactor|test|build|ci)/[a-z0-9]+(-[a-z0-9]+)*$' || { echo 'Use an approved work branch targeting develop.'; exit 1; }
+          fi

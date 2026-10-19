@@ -40,6 +40,9 @@ explicit step and protected environment.
 
 ## Status
 
-This revision contains foundations only. Authentication, authorization, CI and
-deployment are not implemented. Existing hosted infrastructure has not been
+This revision contains foundations and repository CI only. Local hooks and CI
+check source hygiene and run a pinned secret scanner with redacted diagnostics.
+Platform secret scanning and push protection complement review; none guarantees
+that every secret is detected. Authentication, authorization and deployment are
+not implemented. Existing hosted infrastructure has not been
 changed or recertified by this repository reset. No production release is supported.

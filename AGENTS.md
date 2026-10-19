@@ -1,36 +1,20 @@
-# Instrucciones para agentes de IA
+# Repository work rules
 
-## Alcance
-
-KnownGDB es un servicio autónomo de catálogo canónico, identidad y assets de
-videojuegos. Ningún consumidor externo determina el modelo del dominio.
-
-## Reglas obligatorias
-
-- Leer `README.md`, `ROADMAP.md` y la arquitectura relevante antes de modificar código.
-- No inventar credenciales, IDs externos ni datos de producción.
-- Leer SECURITY.md y GOVERNANCE.md antes de modificar autenticación, CI o permisos.
-- Nunca imprimir, persistir ni publicar secretos; redactar logs antes de emitirlos.
-- No cambiar visibilidad ni publicar contenido externo sin autorización explícita.
-- No guardar assets binarios, dumps, screenshots ni outputs de Playwright en Git.
-- Mantener la API como única frontera de acceso para clientes externos.
-- Preservar procedencia, confianza y estado de moderación de los datos.
-- No mezclar identidad de `Game` con una `Release` concreta.
-- Evitar dependencias nuevas sin justificar su necesidad y coste operativo.
-- Registrar decisiones estructurales en `docs/adr/`.
-- Ejecutar las verificaciones disponibles antes de declarar terminado un cambio.
-- Mantener UTF-8 y finales LF según .gitattributes y .editorconfig. No cambiar
-  la configuración global de Git ni introducir conversiones CRLF.
-
-## Estilo de trabajo
-
-Preferir cambios pequeños, reversibles y verificables. Si una tarea requiere una
-decisión de producto o infraestructura no documentada, crear un ADR antes de
-implementarla. Los nombres de código, ramas y features deben ser neutrales y no
-referenciar productos externos usados como inspiración.
-
-## Verificación
-
-Cuando se incorpore Playwright, sus reports, traces, videos, screenshots y
-resultados temporales deben permanecer ignorados por Git. Solo se versionarán
-tests y fixtures pequeños, deterministas y deliberadamente revisados.
+- Public repository: review tracked content and run local policy and redacted
+  secret scanning before any push. Never publish secrets or private diagnostics.
+- Do not commit generated output, dependencies, binaries, media or database dumps.
+- Use neutral project names. Mention external parties only when explicitly
+  necessary for a real dependency or integration; do not record inspirations.
+- Read README.md and relevant product/architecture documents before work.
+- Start from `develop` in a short-lived work branch. Follow docs/GIT-WORKFLOW.md.
+- Changes integrate by PR into `develop`; promote to `main` only after testing
+  the integrated commit and explicitly deciding it is stable.
+- PRs belong to `@mvuljevas`; link tracked issues and validation evidence.
+- Never auto-merge, deploy, release, publish or migrate remote data. Remote
+  actions require explicit user authorization for the task.
+- Keep commits signed and do not bypass branch protections or suppress scanners.
+- Preserve canonical game identity, provenance, confidence and moderation rules.
+- Keep external catalog/assets access behind the API; no privileged browser keys.
+- Use UTF-8 without BOM and LF. Keep structural decisions in docs/adr/.
+- Read SECURITY.md and GOVERNANCE.md before security, workflow or permission work.
+- Run applicable checks and state any limits of verification.

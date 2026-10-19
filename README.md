@@ -5,9 +5,9 @@ identity service and curated asset platform.
 
 ## Status
 
-Foundation reset. This repository contains product rules, governance and the
-architecture for a new implementation. There is no application code, dependency
-installation, runnable development server or deployment in this revision.
+Foundation reset. This repository contains product rules, governance, repository
+checks and the architecture for a new implementation. There is no application
+code, dependency installation, development server or deployment in this revision.
 
 The existing Supabase database and Cloudflare R2 bucket remain in place. Resetting
 this repository does not reset, migrate or delete their data. Before reconnecting,
@@ -43,6 +43,7 @@ consumers, distribution channels and external identifiers.
 - [Security](SECURITY.md)
 - [Governance](GOVERNANCE.md)
 - [Contributing](CONTRIBUTING.md)
+- [Git workflow and tracking](docs/GIT-WORKFLOW.md)
 
 ## License
 
