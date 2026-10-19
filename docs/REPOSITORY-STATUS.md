@@ -18,6 +18,8 @@ runtime, hosted infrastructure, deployment or a stable product release.
 - Platform secret scanning and push protection are enabled; the initial alert
   query was empty. This is a bounded scan result, not proof that leaks are impossible.
 - The merged bootstrap work branch was deleted automatically by repository policy.
+- [Verification PR 15](https://github.com/KnownXDB/KnownGDB/pull/15) was created
+  without an assignee; the assignment workflow succeeded and assigned `mvuljevas`.
 - [Issue 13](https://github.com/KnownXDB/KnownGDB/issues/13) and its PR are attached
   to the existing linked [project](https://github.com/orgs/KnownXDB/projects/1).
 - `foundations` and original main share the root commit with no unique differences.
