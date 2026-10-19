@@ -1,30 +1,30 @@
-# Desarrollo local
+# Local development
 
-Estado: flujo acordado, pendiente de implementación. No hay `package.json` ni
-scripts de aplicación en esta revisión; no ejecutar comandos de la base anterior.
+Status: agreed workflow, implementation pending. This revision has no
+`package.json` or application scripts; do not run commands from the previous base.
 
-## Flujo objetivo
+## Target workflow
 
-1. Clonar e instalar con el lockfile versionado.
-2. Iniciar web o admin individualmente con Vite y HMR.
-3. Diseñar con fixtures locales claramente identificados, sin infraestructura.
-4. Para integración, iniciar API local y configurar Supabase de desarrollo.
-5. Probar permisos, contratos y errores con integración real.
-6. Ejecutar formato, lint, tipos, tests pertinentes y builds.
-7. Hacer commit firmado y push; verificar CI del commit exacto.
-8. Desplegar explícitamente cuando corresponda.
+1. Clone and install using the versioned lockfile.
+2. Start web or admin independently with Vite and HMR.
+3. Design with clearly identified local fixtures, without infrastructure.
+4. For integration, start the local API and configure development Supabase access.
+5. Test permissions, contracts and errors against real integrations.
+6. Run formatting, linting, types, relevant tests and builds.
+7. Create a signed commit and push; verify CI for the exact commit.
+8. Deploy explicitly when appropriate.
 
-## Supabase y R2
+## Supabase and R2
 
-Antes de conectar, verificar proyecto y bucket reales sin emitir secretos.
-Inspeccionar esquema existente, historial de migraciones y políticas. No recrear
-tablas, usuarios ni archivos. Establecer baseline revisado y probar futuras
-migraciones en un entorno aislado antes de aplicarlas a uno compartido.
+Before connecting, verify the actual project and bucket without exposing secrets.
+Inspect the existing schema, migration history and policies. Do not recreate
+tables, users or files. Establish a reviewed baseline and test future migrations
+in an isolated environment before applying them to a shared one.
 
-Variables privilegiadas solo para API; ninguna clave secreta con prefijo Vite.
-Los ejemplos tendrán valores vacíos. Configuración privada, datos locales y
-outputs generados permanecen ignorados. El SDK y CLI oficiales sustituyen
-orquestadores propios de infraestructura.
+Privileged variables belong only to the API; never prefix secret keys for Vite
+exposure. Examples contain empty values. Private configuration, local data and
+generated outputs remain ignored. Official SDK and CLI tools replace custom
+infrastructure orchestration.
 
-La opción local de Supabase puede requerir Docker; no condiciona el desarrollo
-de interfaces. R2 local conserva datos fuera de Git y no modifica el bucket remoto.
+Local Supabase may require Docker; this does not restrict frontend development.
+Local R2 keeps data outside Git and does not modify the remote bucket.

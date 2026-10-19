@@ -1,82 +1,82 @@
-# Arquitectura
+# Architecture
 
-KnownGDB es un producto autónomo de catálogo, identidad y assets. La arquitectura
-prioriza velocidad de desarrollo y una frontera de API estable. Esta revisión
-define responsabilidades; las aplicaciones todavía no están implementadas.
+KnownGDB is an autonomous catalog, identity and asset product. Its architecture
+prioritizes development speed and a stable API boundary. This revision defines
+responsibilities; the applications are not implemented yet.
 
-## Estructura prevista
+## Planned structure
 
 ```text
 apps/
-  web/             React + Vite: experiencia pública
-  admin/           React + Vite: administración independiente
-  api/             TypeScript: API en Cloudflare Workers
+  web/             React + Vite: public experience
+  admin/           React + Vite: independent administration
+  api/             TypeScript: API on Cloudflare Workers
 packages/
-  contracts/       DTOs, validación y cliente HTTP tipado
-  ui/              Tokens y primitivas visuales compartidas
-supabase/          Configuración y baseline revisado; migraciones futuras
-docs/              Reglas y decisiones
+  contracts/       DTOs, validation and typed HTTP client
+  ui/              Shared tokens and UI primitives
+supabase/          Configuration, reviewed baseline and future migrations
+docs/             Rules and decisions
 ```
 
-No crear paquetes vacíos o capas genéricas antes de necesitarlos. Compartir
-primitivas y contratos evita duplicación; web y admin conservan navegación,
-features, entradas y despliegues propios. El código administrativo nunca forma
-parte del bundle público. npm workspaces simplifica instalación y scripts.
+Do not create empty packages or generic layers before they are needed. Shared
+primitives and contracts avoid duplication; web and admin retain their own
+navigation, features, entry points and deployments. Administrative code never
+ships in the public bundle. npm workspaces simplifies installation and scripts.
 
-## Desarrollo y alojamiento
+## Development and hosting
 
-Vite sirve cada frontend con HMR. Un proxy local dirige `/api` al backend; no
-exige HTTPS local, Docker ni reconstruir el servidor antes de editar una pantalla.
-El Worker se ejecuta con herramientas oficiales de Cloudflare. Supabase ofrece
-PostgreSQL y Auth; R2 conserva archivos privados. Cloudflare aloja los frontends
-estáticos y la API; GitHub aloja el código y las verificaciones.
+Vite serves each frontend with HMR. A local proxy directs `/api` to the backend;
+editing a screen does not require local HTTPS, Docker or a prior server rebuild.
+The Worker runs using official Cloudflare tools. Supabase provides PostgreSQL
+and Auth; R2 stores private files. Cloudflare hosts static frontends and the API;
+GitHub hosts source code and checks.
 
-Dos modos explícitos: interfaz con fixtures locales de diseño, o integración
-real mediante API. Los fixtures no simulan persistencia ni éxito remoto.
-Para integración, conectar a Supabase de desarrollo autorizado; para trabajo
-aislado de esquema, usar la CLI local y su runtime opcional. Nunca apuntar
-operaciones destructivas a una base compartida para acelerar desarrollo.
+Two explicit modes: interfaces using local design fixtures, or real integration
+through the API. Fixtures do not simulate persistence or successful remote writes.
+For integration, connect to an authorized development Supabase environment; for
+isolated schema work, use the local CLI and its optional runtime. Never point
+destructive operations at a shared database to speed up development.
 
-Build local y push no equivalen a deploy. No desplegar ni migrar producción
-automáticamente. Identificadores, dominios y bindings reales se verifican al
-conectar cada entorno; esta documentación no inventa configuración remota.
+Local builds and pushes do not imply deployment. Never deploy or migrate
+production automatically. Verify real identifiers, domains and bindings when
+connecting each environment; this documentation does not invent remote settings.
 
-## Frontera de acceso
+## Access boundary
 
-Web, admin y consumidores consultan catálogo y assets por `/api/v1`. El SDK de
-Supabase se utiliza en el backend para acceso a datos. El admin puede usar el
-SDK oficial exclusivamente para Auth con configuración publicable; la API
-valida sesión y permisos en cada operación. La estrategia concreta de sesión,
-CSRF, MFA y revocación exige ADR y revisión de seguridad antes de implementación.
+Web, admin and external consumers access catalog and assets through `/api/v1`.
+The backend uses the Supabase SDK for data access. Admin may use the official SDK
+exclusively for Auth with publishable configuration; the API validates sessions
+and permissions on every operation. The concrete session, CSRF, MFA and revocation
+strategy requires an ADR and security review before implementation.
 
-Las claves privilegiadas y bindings R2 permanecen en el servidor. No habilitar
-acceso directo a tablas como atajo. RLS y permisos explícitos acompañan la
-autorización del backend. Los archivos se sirven por la API o mediante permisos
-temporales emitidos por ella tras comprobar acceso y publicación.
+Privileged keys and R2 bindings remain server-side. Do not enable direct table
+access as a shortcut. RLS and explicit grants complement backend authorization.
+Files are served through the API or temporary permissions it issues after
+checking access and publication status.
 
-## Dominio
+## Domain
 
-- Game: ID interno estable; nombres y proveedores no definen identidad.
-- GameLocalization: nombres, aliases y descripciones por idioma.
-- Release: plataforma, edición, región y fecha con precisión explícita.
-- Organization y Genre: entidades propias con relaciones y traducciones.
-- ExternalIdentity e IdentityDecision: fuente, evidencia, confianza, revisión y
-  resultado; coincidencia de nombre no basta para fusionar juegos.
-- Assets: archivo inmutable, pieza editorial y asignación son conceptos distintos.
-  Asignaciones por Game o Release, rol, idiomas, región, contexto y vigencia.
-- Moderación, publicación y vigencia son estados independientes.
-- Acceso: colaboración, plan comercial y permisos no son equivalentes.
-- Auditoría: autor, fecha, motivo y cambios sensibles verificables.
+- Game: stable internal ID; names and providers do not define identity.
+- GameLocalization: titles, aliases and descriptions by language.
+- Release: platform, edition, region and date with explicit precision.
+- Organization and Genre: independent entities with relationships and translations.
+- ExternalIdentity and IdentityDecision: source, evidence, confidence, review and
+  result; matching names alone do not justify merging games.
+- Assets: immutable file, editorial piece and assignment are separate concepts.
+  Assignments specify Game or Release, role, languages, region, context and validity.
+- Moderation, publication and validity are independent states.
+- Access: collaboration, commercial plans and permissions are separate concepts.
+- Audit: verifiable author, date, reason and sensitive changes.
 
-Los módulos iniciales viven dentro de una API pequeña. Separar procesos y
-servicios solo con necesidad medida. No copiar la estructura anterior ni diseñar
-frameworks internos para posibilidades futuras.
+Initial modules live within a small API. Separate processes and services only
+when measured needs justify them. Do not copy the previous structure or build
+internal frameworks for hypothetical future requirements.
 
-## Dirección visual
+## Visual direction
 
-Web: catálogo visual, búsqueda prominente, filtros claros, galerías de assets,
-detalle canónico y jerarquía editorial cuidada. Admin: entorno premium enfocado
-en trabajo, tablas legibles, formularios claros, revisión y feedback inmediato.
-Ambas interfaces tienen identidad propia, tokens coherentes, accesibilidad y
-estados responsive. No usar marcas, referencias ni assets ajenos como identidad
-del producto. El diseño visual se realizará en la fase de implementación.
+Web: visual catalog, prominent search, clear filters, asset galleries, canonical
+details and considered editorial hierarchy. Admin: a premium work environment
+with readable tables, clear forms, review flows and immediate feedback.
+Both interfaces have their own identity, coherent tokens, accessibility and
+responsive states. Do not use external brands, references or assets as product
+identity. Visual design will take place during implementation.

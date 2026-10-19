@@ -1,42 +1,42 @@
-# ADR 0001: fundamentos para desarrollo local
+# ADR 0001: foundations for local development
 
-Fecha: 2026-10-13. Estado: aceptado por el mantenedor en el reinicio.
+Date: 2026-10-13. Status: accepted by the maintainer during the reset.
 
-## Contexto
+## Context
 
-El enfoque anterior no satisface el flujo de trabajo deseado. El desarrollo de
-interfaces depende de demasiada infraestructura y coordinación. La prioridad
-es iterar normalmente en local, comprobar cambios y hacer push.
+The previous approach does not support the desired workflow. Interface development
+depends on too much infrastructure and coordination. The priority is normal local
+iteration, validation and then push.
 
-Se conservan fundamentos, reglas y plataformas: GitHub, Supabase y Cloudflare.
-La base de datos existente y el bucket R2 no son descartables. El alcance de
-este reinicio es documentación de fundamentos y repositorio limpio; no incluye
-implementar interfaces, cambiar servicios remotos ni migrar datos.
+Foundations, rules and platforms remain: GitHub, Supabase and Cloudflare.
+The existing database and R2 bucket are not disposable. This reset covers
+foundation documentation and a clean repository; it does not include interface
+implementation, remote service changes or data migration.
 
-## Decisión
+## Decision
 
-1. Retirar código y configuración anteriores; iniciar un historial sin padres
-   en la rama temporal `foundations`, con respaldo externo recuperable.
-2. React + Vite + TypeScript + Tailwind para web y admin separados.
-3. Workspace npm pequeño; compartir contratos y UI solo cuando se necesiten.
-4. API TypeScript en Cloudflare Workers; Supabase para PostgreSQL/Auth y R2 privado
-   para archivos. La API sigue siendo la frontera de datos para consumidores.
-5. Inicio de frontend independiente; HMR, proxy de API y fixtures explícitos.
-   Docker es opcional para base local, nunca requisito del frontend.
-6. Baseline de Supabase a partir del estado real revisado antes de introducir
-   migraciones nuevas. Ningún reset remoto implícito.
-7. Verificar localmente y en GitHub; despliegue separado y explícito.
-8. Diseño premium propio para ambas superficies; velocidad no elimina seguridad,
-   procedencia, moderación, identidad canónica ni accesibilidad.
+1. Remove previous code and configuration; start a history without parents on
+   the temporary `foundations` branch, with a recoverable external backup.
+2. React + Vite + TypeScript + Tailwind for separate web and admin applications.
+3. A small npm workspace; share contracts and UI only when needed.
+4. TypeScript API on Cloudflare Workers; Supabase for PostgreSQL/Auth and private
+   R2 for files. The API remains the data boundary for consumers.
+5. Independent frontend startup; HMR, API proxy and explicit fixtures. Docker
+   is optional for a local database, never a frontend prerequisite.
+6. Establish the Supabase baseline from reviewed actual state before introducing
+   new migrations. No implicit remote reset.
+7. Verify locally and on GitHub; keep deployment separate and explicit.
+8. Distinct premium design for both surfaces; speed does not remove security,
+   provenance, moderation, canonical identity or accessibility requirements.
 
-## Consecuencias
+## Consequences
 
-No se conserva compatibilidad de la implementación anterior. No hay aplicaciones
-ejecutables en el commit de fundamentos. Las capacidades vuelven por fases pequeñas
-y verificables. Las configuraciones de hosting y CI se crearán para la nueva base,
-sin arrastrar herramientas o dependencias del enfoque retirado.
+Compatibility with the previous implementation is not preserved. The foundation
+commit contains no runnable applications. Capabilities return in small, verifiable
+phases. Hosting and CI configuration will be created for the new base without
+carrying over tools or dependencies from the retired approach.
 
-Reescribir Git no borra copias, forks, referencias de PR ni objetos retenidos por
-el proveedor. No es una herramienta de revocación de secretos. Las protecciones
-remotas pueden impedir el reemplazo del historial y requieren intervención del
-mantenedor; no se desactivan como efecto secundario del reinicio local.
+Rewriting Git does not erase copies, forks, PR references or objects retained by
+the provider. It is not a secret-revocation mechanism. Remote protections may
+prevent history replacement and require maintainer intervention; they are not
+disabled as a side effect of the local reset.

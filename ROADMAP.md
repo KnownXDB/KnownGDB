@@ -1,60 +1,60 @@
 # Roadmap
 
-Estado: fundamentos. La implementación anterior ha sido retirada del árbol de
-trabajo. Este documento describe trabajo futuro, no capacidades disponibles.
+Status: foundations. The previous implementation has been removed from the
+working tree. This document describes future work, not available capabilities.
 
-## 0. Fundamentos
+## 0. Foundations
 
-- [x] Conservar autonomía, políticas del dominio, seguridad, gobernanza y licencia.
-- [x] Registrar arquitectura orientada al desarrollo local.
-- [x] Separar responsabilidades de web, admin, API y plataformas.
-- [x] Retirar implementación, dependencias y configuraciones del enfoque anterior.
+- [x] Preserve autonomy, domain policies, security, governance and licensing.
+- [x] Record an architecture focused on local development.
+- [x] Separate web, admin, API and platform responsibilities.
+- [x] Remove the previous implementation, dependencies and configuration.
 
-## 1. Workspace local
+## 1. Local workspace
 
-- React + Vite + TypeScript + Tailwind para web y admin independientes.
-- npm workspaces; contratos y componentes compartidos pequeños.
-- Comandos simples de desarrollo, formato, lint, tipos, tests y build.
-- HMR directo; sin Docker, certificados locales ni build previo del backend
-  para trabajar en frontend.
-- API local con proxy de Vite; fixtures explícitos y deterministas para diseño.
-- [x] CI de higiene del repositorio y secretos, sin despliegue implícito.
-- [x] Flujo protegido de ramas, asignación de PRs y proyecto de tracking.
-- CI de aplicación (lint, tipos, tests y build) al implementar el workspace.
-- Aceptación: una instalación limpia inicia ambas interfaces por separado,
-  refleja cambios con HMR y construye cada aplicación de manera independiente.
+- React + Vite + TypeScript + Tailwind for independent web and admin applications.
+- npm workspaces with small shared contracts and components.
+- Simple commands for development, formatting, linting, types, tests and builds.
+- Direct HMR; no Docker, local certificates or prior backend build required
+  for frontend development.
+- Local API with a Vite proxy; explicit, deterministic design fixtures.
+- [x] Repository hygiene and secret-scanning CI, without implicit deployment.
+- [x] Protected branch workflow, PR assignment and a tracking project.
+- Application CI (lint, types, tests and builds) when implementing the workspace.
+- Acceptance: a clean installation starts both interfaces independently,
+  reflects edits through HMR and builds each application separately.
 
-## 2. Conexión de infraestructura
+## 2. Infrastructure connection
 
-- Inspeccionar Supabase existente: esquema, migrations, Auth, RLS y permisos.
-- Establecer baseline sin recrear ni sobrescribir datos remotos.
-- Configurar conexión local a un entorno de desarrollo autorizado de Supabase.
-- Opción local con CLI oficial para cambios aislados en base de datos.
-- Worker con R2 privado y almacenamiento local para desarrollo de assets.
-- Documentar variables privadas, bindings y despliegue manual en Cloudflare.
-- Aceptación: lectura real por API con permisos comprobados; pruebas de
-  autorización negativa; ninguna credencial privilegiada en bundles.
+- Inspect existing Supabase schema, migrations, Auth, RLS and permissions.
+- Establish a baseline without recreating or overwriting remote data.
+- Configure local access to an authorized Supabase development environment.
+- Provide an official CLI option for isolated local database work.
+- Worker with private R2 storage and local asset storage for development.
+- Document private variables, bindings and manual Cloudflare deployment.
+- Acceptance: real API reads with verified permissions; negative authorization
+  tests; no privileged credentials in frontend bundles.
 
-## 3. Experiencia pública
+## 3. Public experience
 
-- Definir tokens, tipografía, navegación, densidad y estados responsive.
-- Catálogo visual centrado en assets: búsqueda, filtros, galería y detalle.
-- Diferenciar Game, releases, idiomas, procedencia y estado de publicación.
-- Estados vacíos, carga y error; accesibilidad, teclado y contraste comprobados.
-- Diseño premium con identidad propia y contenido autorizado.
+- Define tokens, typography, navigation, density and responsive states.
+- Asset-focused visual catalog: search, filters, galleries and detail views.
+- Distinguish Game, releases, languages, provenance and publication status.
+- Empty, loading and error states; verified accessibility, keyboard use and contrast.
+- Premium design with its own identity and authorized content.
 
-## 4. Administración
+## 4. Administration
 
-- Diseño premium propio, navegación y build independientes de la web pública.
-- Sesiones individuales y autorización en API, con auditoría.
-- Catálogo, traducciones, releases, identidad, assets y moderación.
-- Formularios y operaciones reales con validación y feedback.
-- MFA, revocación y recuperación comprobadas antes de producción.
+- Distinct premium design, navigation and build independent of the public web.
+- Individual sessions, API authorization and auditing.
+- Catalog, translations, releases, identity, assets and moderation.
+- Real forms and operations with validation and feedback.
+- Verified MFA, revocation and recovery before production use.
 
-## 5. Publicación y evolución
+## 5. Publication and evolution
 
-- API versionada, acceso, planes, scopes, cuotas y controles de abuso.
-- Validar backups, recuperación, derechos y políticas antes de publicación.
-- Despliegues explícitos, observables y recuperables.
-- Búsqueda dedicada, trabajos asíncronos y multimedia cuando la evidencia
-  justifique su coste.
+- Versioned API, access, plans, scopes, quotas and abuse controls.
+- Validate backups, recovery, rights and policies before publication.
+- Explicit, observable and recoverable deployments.
+- Dedicated search, asynchronous jobs and multimedia when evidence justifies
+  their operational cost.
