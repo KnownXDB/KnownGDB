@@ -1,5 +1,8 @@
 # Repository work rules
 
+- Use English for source, comments, documentation, issues, PRs, labels and project
+  metadata. Preserve proper names and intentionally localized catalog content.
+
 - Public repository: review tracked content and run local policy and redacted
   secret scanning before any push. Never publish secrets or private diagnostics.
 - Do not commit generated output, dependencies, binaries, media or database dumps.

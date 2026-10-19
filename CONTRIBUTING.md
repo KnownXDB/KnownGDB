@@ -1,5 +1,9 @@
 # Contributing
 
+Write repository content in English, including documentation, code comments,
+issues, PRs, labels and project metadata. Proper names and localized catalog
+content retain their appropriate languages.
+
 Read README.md, ROADMAP.md, AGENTS.md and the relevant architecture first.
 Read SECURITY.md and GOVERNANCE.md before auth, CI or permission work.
 
