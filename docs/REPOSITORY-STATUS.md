@@ -38,3 +38,5 @@ foundation snapshot until a deliberate stable promotion.
 
 No automatic merge, release, deployment, preview publication, or remote database
 operation is configured. Main has not received the governance changes yet.
+Scheduled dependency-update PR creation is disabled; pinned tools and actions
+are updated through explicit work requests.

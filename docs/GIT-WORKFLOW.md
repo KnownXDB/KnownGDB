@@ -3,6 +3,8 @@
 `develop` is the default branch and integration environment. `main` contains
 manually promoted stable integrations. There are no automatic merges, releases,
 deployments, previews or database migrations.
+Dependency updates also remain explicit work; no scheduled bot PR creation is
+configured. Review and update pinned tools/actions through ordinary work PRs.
 
 ## Work cycle
 
