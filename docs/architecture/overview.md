@@ -5,7 +5,7 @@ prioritizes development speed and a stable API boundary. This revision defines
 responsibilities. The executable web/admin/API foundation is implemented; full
 product interfaces, authenticated publishing and ingestion remain pending.
 
-## Planned structure
+## Workspace structure
 
 ```text
 apps/
@@ -13,9 +13,9 @@ apps/
   admin/           React + Vite: independent administration
   api/             Shared TypeScript API handlers
 packages/
-  contracts/       DTOs, validation and typed HTTP client
-  ui/              Shared tokens and UI primitives
-supabase/          Configuration, reviewed baseline and future migrations
+  contracts/       Shared domain types and role taxonomy
+  ui/              Account/recovery components and shared workspace styling
+supabase/          Additive migration and rollback-only SQL tests; baseline incomplete
 netlify/           Thin Functions adapter for external testing
 docs/             Rules and decisions
 ```
@@ -48,10 +48,11 @@ connecting each environment; this documentation does not invent remote settings.
 ## Access boundary
 
 Web, admin and external consumers access catalog and assets through `/api/v1`.
-The backend uses the Supabase SDK for data access. Admin may use the official SDK
-exclusively for Auth with publishable configuration; the API validates sessions
-and permissions on every operation. The concrete session, CSRF, MFA and revocation
-strategy requires an ADR and security review before implementation.
+The backend uses the Supabase SDK for data and Auth. Both frontends use same-origin
+API requests; normal Auth tokens stay inside encrypted HttpOnly cookies. The API
+validates identity and current administrative membership. See
+[ADR 0006](../adr/0006-persistent-account-sessions.md) for expiry, renewal, CSRF,
+recovery and remaining revocation/MFA requirements before production.
 
 Privileged keys and R2 bindings remain server-side. Do not enable direct table
 access as a shortcut. RLS and explicit grants complement backend authorization.

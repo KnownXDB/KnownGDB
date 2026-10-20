@@ -3,13 +3,16 @@
 Status: executable local foundation plus implementation plan and bounded
 infrastructure audit, not a completed MVP. The infrastructure table below records
 the initial audit snapshot; subsequent changes are listed separately.
-Date: 2026-10-19. All repository and interface copy is English.
+Initial audit: 2026-10-19. Implementation status updated 2026-10-20.
+All repository and interface copy is English.
 
 ## Implemented foundation slice
 
 - Independent React/Vite/Tailwind web and admin development workspaces and builds.
 - Shared TypeScript API with health, role taxonomy, published catalog search and
-  server-verified administrative session introspection; no public write endpoints.
+  server-verified administrative session introspection.
+- Email/password accounts, recovery, public contributor names and encrypted
+  HttpOnly sessions with backend renewal and one-request account restoration.
 - Domain rules for canonical R2 keys, languages, temporal selection and credit.
 - Additive database migration with immutable collections/versions, registered
   public profiles, audit events and the verified existing Super Admin role.
@@ -17,9 +20,11 @@ Date: 2026-10-19. All repository and interface copy is English.
 - Netlify cleanup removed 19 old deploys; zero remain and the site URL is retained.
 - Formatting, types, repository/API/domain tests and independent builds pass.
 
-The local private connection still needs valid credentials before a real catalog
-read can be certified. Sign-in/publishing forms, upload finalization, storage
-reconciliation and the finished premium interfaces remain future feature slices.
+Real published-catalog reads and browser search were verified. The maintainer
+confirmed real password recovery, Super Admin sign-in and session persistence.
+Automated browser checks use isolated Auth responses and do not create cloud users.
+Publishing forms, upload finalization, storage reconciliation, complete isolated
+database bootstrap and the finished premium interfaces remain future feature slices.
 
 ## Product outcome
 

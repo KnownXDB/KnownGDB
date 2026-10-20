@@ -1,6 +1,6 @@
 # ADR 0003: Netlify testing and media boundaries
 
-Date: 2026-10-19. Status: hosting direction requested; implementation pending.
+Date: 2026-10-19. Status: accepted; local adapter implemented, hosted acceptance pending.
 
 ## Context
 
