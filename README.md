@@ -18,7 +18,8 @@ or assume the database is empty.
 
 - Public web: React, Vite, TypeScript and Tailwind CSS.
 - Administration: a separate React/Vite application with a premium interface.
-- API: a small TypeScript service on Cloudflare Workers, developed locally.
+- API: shared TypeScript handlers developed locally, with a Netlify Functions
+  adapter for explicitly deployed external testing.
 - Database and authentication: Supabase, using its official tooling and SDK.
 - Private immutable asset storage: Cloudflare R2.
 - Source control and verification: GitHub.
@@ -44,6 +45,8 @@ consumers, distribution channels and external identifiers.
 - [Governance](GOVERNANCE.md)
 - [Contributing](CONTRIBUTING.md)
 - [Git workflow and tracking](docs/GIT-WORKFLOW.md)
+- [Foundations audit and MVP execution plan](docs/FOUNDATIONS-MVP.md)
+- [Netlify testing decision](docs/adr/0003-netlify-testing-and-media-boundaries.md)
 
 ## License
 

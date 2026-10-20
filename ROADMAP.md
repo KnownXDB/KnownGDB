@@ -30,8 +30,11 @@ working tree. This document describes future work, not available capabilities.
 - Establish a baseline without recreating or overwriting remote data.
 - Configure local access to an authorized Supabase development environment.
 - Provide an official CLI option for isolated local database work.
-- Worker with private R2 storage and local asset storage for development.
-- Document private variables, bindings and manual Cloudflare deployment.
+- Shared local TypeScript API and Netlify Functions testing adapter.
+- Private R2 storage and ignored local asset storage for development.
+- Reuse the existing Netlify testing project; verify explicitly deployed web,
+  admin and API URLs without enabling automatic repository builds.
+- Document private runtime variables and storage permissions.
 - Acceptance: real API reads with verified permissions; negative authorization
   tests; no privileged credentials in frontend bundles.
 
@@ -49,6 +52,10 @@ working tree. This document describes future work, not available capabilities.
 - Individual sessions, API authorization and auditing.
 - Catalog, translations, releases, identity, assets and moderation.
 - Real forms and operations with validation and feedback.
+- Hybrid trailer references and approved preserved R2 originals, with source
+  availability independent of retention, rights and public access.
+- Video allowlist validation and range-capable original playback/download;
+  preservation must survive source retirement without losing provenance.
 - Verified MFA, revocation and recovery before production use.
 
 ## 5. Publication and evolution

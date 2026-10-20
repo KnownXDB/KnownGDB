@@ -10,11 +10,12 @@ responsibilities; the applications are not implemented yet.
 apps/
   web/             React + Vite: public experience
   admin/           React + Vite: independent administration
-  api/             TypeScript: API on Cloudflare Workers
+  api/             Shared TypeScript API handlers
 packages/
   contracts/       DTOs, validation and typed HTTP client
   ui/              Shared tokens and UI primitives
 supabase/          Configuration, reviewed baseline and future migrations
+netlify/           Thin Functions adapter for external testing
 docs/             Rules and decisions
 ```
 
@@ -27,9 +28,11 @@ ships in the public bundle. npm workspaces simplifies installation and scripts.
 
 Vite serves each frontend with HMR. A local proxy directs `/api` to the backend;
 editing a screen does not require local HTTPS, Docker or a prior server rebuild.
-The Worker runs using official Cloudflare tools. Supabase provides PostgreSQL
-and Auth; R2 stores private files. Cloudflare hosts static frontends and the API;
-GitHub hosts source code and checks.
+Local Node execution and a thin Netlify Functions adapter use the same API
+handlers. Supabase provides PostgreSQL and Auth; Cloudflare R2 stores private
+files. Netlify hosts explicitly deployed web/admin/API testing builds; GitHub
+hosts source code and checks. See
+[ADR 0003](../adr/0003-netlify-testing-and-media-boundaries.md).
 
 Two explicit modes: interfaces using local design fixtures, or real integration
 through the API. Fixtures do not simulate persistence or successful remote writes.
