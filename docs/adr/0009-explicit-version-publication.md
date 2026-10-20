@@ -41,5 +41,9 @@ controlled administrative responses. Real public history is read separately.
 No real hosted version is published by implementation or automated verification.
 Migration `20261020212708` matches the hosted ledger digest. Hosted checks confirm
 service-only function execution and six private versions with zero published.
-Real administrator browser acceptance remains a maintainer action. Production
+The maintainer confirmed real Super Admin history loading, private state, review
+and storage metadata, and publication controls. The local API initially returned
+404 from a stale process; restarting only that process restored the route, also
+verified through the admin proxy. Real hosted publication remains untested.
+Production
 administration still requires the MFA and revocation work documented in ADR 0006.
