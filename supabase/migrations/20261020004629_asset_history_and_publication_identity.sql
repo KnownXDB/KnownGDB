@@ -4,6 +4,12 @@ alter table catalog.admin_members add column role text not null default 'moderat
 
 do $$
 begin
+  -- Fresh local databases have no administrator to promote. Existing databases
+  -- must still satisfy the original designation guard below.
+  if not exists (select 1 from auth.users)
+     and not exists (select 1 from catalog.admin_members)
+  then return;
+  end if;
   if (select count(*) from auth.users) <> 1
      or (select count(*) from catalog.admin_members where active) <> 1
      or not exists (select 1 from catalog.admin_members m join auth.users u on u.id=m.user_id where m.active)

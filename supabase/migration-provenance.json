@@ -1,0 +1,41 @@
+{
+  "source": "Existing project migration ledger, retrieved read-only on 2026-10-20",
+  "normalization": "UTF-8, CRLF converted to LF, exactly one trailing LF",
+  "recovered": [
+    {
+      "version": "20261012194157",
+      "name": "catalog_foundation",
+      "sha256": "af5416d6503992e9c8d9bbe1ddbf23999581e4dfefe9f171a18124a8bd691cde"
+    },
+    {
+      "version": "20261012195146",
+      "name": "administrative_catalog",
+      "sha256": "8c2393533e46b130fe29924a4f0c3af95fdeb89d150407dd115252970af91102"
+    },
+    {
+      "version": "20261012201644",
+      "name": "asset_ingestion",
+      "sha256": "13d5ba3ee5662584434aca8cf242219bdd30e9cc9fb97a4a2904a87b472418c2"
+    },
+    {
+      "version": "20261012211104",
+      "name": "optional_asset_review_reason",
+      "sha256": "528fb1dc86894c6f283b2f1ca44c01704bfb9f2293c0bed3c57dbb9e72175863"
+    },
+    {
+      "version": "20261012211532",
+      "name": "batch_asset_review",
+      "sha256": "53badf2e2592be966e1e6684b36e88a5dea1a4065904c1df593b37d3b07874bc"
+    },
+    {
+      "version": "20261012213419",
+      "name": "original_ico_assets",
+      "sha256": "d19f88a5fc7a10c5c19073cf8c881e37b1b41334049894fe3f75182af90f3711"
+    }
+  ],
+  "adaptation": {
+    "version": "20261020004629",
+    "remoteSha256": "ed155ec9eb630f04885d02d2851ca8498fd834095ab971502c7369f954c9973f",
+    "reason": "Local replay skips the Super Admin designation only when both Auth users and administrative memberships are empty. The existing database guard remains unchanged otherwise. Never replay or repair the applied remote migration."
+  }
+}
