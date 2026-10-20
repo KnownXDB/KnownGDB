@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  color: #edf2fa;
+  background: #10151c;
+}
+body {
+  margin: 0;
+}
+* {
+  box-sizing: border-box;
+}
+a {
+  color: #91d4ff;
+}
+button,
+input {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+  background: #91d4ff;
+  color: #12202e;
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: 0.4rem;
+  font-weight: 650;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+input {
+  border: 1px solid #69788d;
+  background: #19222e;
+  color: inherit;
+  padding: 0.75rem;
+  border-radius: 0.4rem;
+  width: 100%;
+}
+:focus-visible {
+  outline: 3px solid #ffce73;
+  outline-offset: 4px;
+}
+header {
+  padding: 1.25rem max(1rem, calc((100vw - 1000px) / 2));
+  border-bottom: 1px solid #354254;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+main {
+  max-width: 1000px;
+  margin: 4rem auto;
+  padding: 0 1rem;
+}
+h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.15;
+  margin: 0 0 1rem;
+}
+h2 {
+  font-size: 1.2rem;
+  margin-top: 2rem;
+}
+p {
+  max-width: 70ch;
+  color: #bac7d7;
+  line-height: 1.65;
+}
+form {
+  display: flex;
+  gap: 0.75rem;
+  margin: 2rem 0;
+}
+label {
+  flex: 1;
+}
+label span {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+form button {
+  align-self: end;
+}
+ul {
+  list-style: none;
+  padding: 0;
+}
+li {
+  border-bottom: 1px solid #354254;
+  padding: 1rem 0;
+}
+small {
+  color: #bac7d7;
+}
+code {
+  overflow-wrap: anywhere;
+}
+[role="alert"] {
+  color: #ffbdbd;
+}
+@media (max-width: 540px) {
+  form {
+    flex-direction: column;
+  }
+  form button {
+    align-self: stretch;
+  }
+  main {
+    margin-top: 2rem;
+  }
+}

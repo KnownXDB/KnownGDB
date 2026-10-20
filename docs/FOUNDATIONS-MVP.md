@@ -1,7 +1,25 @@
 # Foundations and MVP execution plan
 
-Status: implementation plan and bounded infrastructure audit, not a completed MVP.
+Status: executable local foundation plus implementation plan and bounded
+infrastructure audit, not a completed MVP. The infrastructure table below records
+the initial audit snapshot; subsequent changes are listed separately.
 Date: 2026-10-19. All repository and interface copy is English.
+
+## Implemented foundation slice
+
+- Independent React/Vite/Tailwind web and admin development workspaces and builds.
+- Shared TypeScript API with health, role taxonomy, published catalog search and
+  server-verified administrative session introspection; no public write endpoints.
+- Domain rules for canonical R2 keys, languages, temporal selection and credit.
+- Additive database migration with immutable collections/versions, registered
+  public profiles, audit events and the verified existing Super Admin role.
+- Existing title, six legacy database assets and all R2 objects preserved.
+- Netlify cleanup removed 19 old deploys; zero remain and the site URL is retained.
+- Formatting, types, repository/API/domain tests and independent builds pass.
+
+The local private connection still needs valid credentials before a real catalog
+read can be certified. Sign-in/publishing forms, upload finalization, storage
+reconciliation and the finished premium interfaces remain future feature slices.
 
 ## Product outcome
 

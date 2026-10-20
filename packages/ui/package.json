@@ -1,0 +1,8 @@
+{
+  "name": "@knowngdb/ui",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./workspace.css": "./src/workspace.css"
+  }
+}
