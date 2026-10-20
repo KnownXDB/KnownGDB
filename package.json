@@ -16,17 +16,20 @@
     "dev:local": "node scripts/dev.mjs --local",
     "db:stop": "node node_modules/supabase/dist/supabase.js stop",
     "db:reset:local": "node node_modules/supabase/dist/supabase.js db reset --local",
-    "db:test": "node scripts/test-database.mjs",
+    "db:test": "tsx scripts/test-database.mjs",
     "setup:session": "node scripts/configure-session.mjs",
     "dev": "node scripts/dev.mjs",
     "dev:web": "npm run dev -w @knowngdb/web",
     "dev:admin": "npm run dev -w @knowngdb/admin",
     "dev:api": "tsx watch --env-file-if-exists=.env apps/api/src/server.ts",
     "typecheck": "tsc --noEmit",
-    "format:check": "prettier --check apps packages netlify scripts/dev.mjs scripts/build.mjs scripts/configure-session.mjs scripts/configure-local-stack.mjs scripts/test-database.mjs tests/*.test.ts tsconfig.json package.json supabase/migration-provenance.json",
+    "format:check": "prettier --check apps packages netlify scripts/dev.mjs scripts/build.mjs scripts/configure-session.mjs scripts/configure-local-stack.mjs scripts/test-database.mjs scripts/storage-reconciliation.ts scripts/plan-legacy-backfill.ts scripts/execute-legacy-backfill.ts scripts/r2-backfill-storage.ts scripts/import-legacy-assets.ts tests/*.test.ts tsconfig.json package.json supabase/migration-provenance.json",
     "test": "node --test tests/repository-policy.test.mjs && tsx --test tests/*.test.ts",
     "build": "npm run typecheck && node scripts/build.mjs",
-    "check": "npm run format:check && npm run typecheck && npm test && npm run db:test && npm run build"
+    "check": "npm run format:check && npm run typecheck && npm test && npm run db:test && npm run build",
+    "storage:reconcile": "tsx scripts/storage-reconciliation.ts",
+    "storage:plan-backfill": "tsx scripts/plan-legacy-backfill.ts",
+    "storage:import": "tsx --env-file-if-exists=.env scripts/import-legacy-assets.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",
@@ -34,6 +37,7 @@
     "react-dom": "19.3.1"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "3.1154.0",
     "@tailwindcss/vite": "4.3.3",
     "@types/node": "26.6.5",
     "@types/react": "19.3.0",

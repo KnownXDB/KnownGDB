@@ -33,8 +33,8 @@ This is not production certification or hosted deployment acceptance.
 - CI remains verification-only. No deployment, release, additional migration,
   R2 object change or remote Auth configuration change accompanies integration.
 
-The current roadmap distinguishes completed foundations from pending
-R2 reconciliation, authenticated ingestion/moderation and
+The current roadmap distinguishes completed foundations/backfill from pending
+version publication/read integration, authenticated ingestion/moderation and
 premium product interfaces. Hosted runtime validation, MFA and stronger revocation
 controls remain prerequisites for production administration. See
 [session boundaries](adr/0006-persistent-account-sessions.md).
@@ -45,6 +45,17 @@ The full local Supabase stack also passed real browser account flows on PostgreS
 17.11, including captured confirmation/recovery mail and server-enforced roles.
 Synthetic accounts were removed without accessing hosted Auth data. See
 [ADR 0007](adr/0007-recovered-local-database-baseline.md) for the local adaptation.
+
+Storage follow-up: [read-only reconciliation](STORAGE-RECONCILIATION.md) verified
+six registered R2 originals and one expired incomplete upload against independent
+body hashes. All seven are preserved; no hosted rows or objects were changed.
+
+Import follow-up: the guarded executor and eighth migration are verified locally
+with thirteen RLS tables, rollback/permission checks and immutable mapping records.
+Authorized hosted execution also passed independent acceptance: six private
+versions/mappings and six copies, with all seven original objects and legacy
+assets/upload intents unchanged. The eighth migration's digest matches its
+ledger entry. See the [runbook](LEGACY-IMPORT-RUNBOOK.md) for evidence and limits.
 
 Promotion acceptance requires successful CI and local checks on the exact
 integrated develop commit, then a separate reviewed develop-to-main PR. Public
