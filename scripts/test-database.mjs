@@ -73,7 +73,7 @@ const migrationFiles = fs
   .readdirSync("supabase/migrations")
   .filter((name) => name.endsWith(".sql"))
   .sort();
-assert.equal(migrationFiles.length, 8);
+assert.equal(migrationFiles.length, 9);
 const sql = migrationFiles.map((file) =>
   fs.readFileSync(path.join("supabase/migrations", file), "utf8"),
 );
@@ -353,6 +353,117 @@ try {
     assert.equal(mapping.source_snapshot.width, 16);
     assert.equal(mapping.upload_snapshot.actor_id, actorId);
     assert.ok(mapping.copy_verified_at && mapping.imported_at);
+    const publicationSession = "00000000-0000-4000-8000-000000000020";
+    await fresh.query(
+      "update catalog.games set status='published' where id=$1",
+      [gameId],
+    );
+    await fresh.query("insert into auth.sessions(id,user_id) values($1,$2)", [
+      publicationSession,
+      actorId,
+    ]);
+    const publish = async (
+      expected = "private",
+      state = "published",
+      session = publicationSession,
+    ) =>
+      fresh.query(
+        "select public.set_asset_version_publication($1,$2,$3,$4,$5,$6) as result",
+        [
+          fixtureId,
+          actorId,
+          session,
+          expected,
+          state,
+          "Explicit publication fixture",
+        ],
+      );
+    for (const role of ["anon", "authenticated"]) {
+      await fresh.query("savepoint publication_permissions");
+      await fresh.query(`set local role ${role}`);
+      await assert.rejects(publish(), (error) => error.code === "42501");
+      await fresh.query("rollback to savepoint publication_permissions");
+    }
+    await fresh.query("savepoint publication_session");
+    await fresh.query("set local role service_role");
+    await assert.rejects(
+      publish("private", "published", fixtureId),
+      (error) => error.code === "28000",
+    );
+    await fresh.query("rollback to savepoint publication_session");
+    await fresh.query("savepoint publication_expired_session");
+    await fresh.query(
+      "update auth.sessions set not_after=now()-interval '1 minute' where id=$1",
+      [publicationSession],
+    );
+    await assert.rejects(publish(), (error) => error.code === "28000");
+    await fresh.query("rollback to savepoint publication_expired_session");
+    await fresh.query("savepoint publication_moderator");
+    await fresh.query(
+      "update catalog.admin_members set role='moderator' where user_id=$1",
+      [actorId],
+    );
+    await assert.rejects(publish(), (error) => error.code === "42501");
+    await fresh.query("rollback to savepoint publication_moderator");
+    await fresh.query("savepoint publication_game");
+    await fresh.query("update catalog.games set status='draft' where id=$1", [
+      gameId,
+    ]);
+    await assert.rejects(publish(), (error) => error.code === "23514");
+    await fresh.query("rollback to savepoint publication_game");
+    for (const change of [
+      "storage_verified_at=null",
+      "moderation_status='rejected'",
+    ]) {
+      await fresh.query("savepoint publication_eligibility");
+      await fresh.query(
+        `update catalog.asset_versions set ${change},changed_by=$2,change_reason='Eligibility fixture' where id=$1`,
+        [fixtureId, actorId],
+      );
+      await assert.rejects(publish(), (error) => error.code === "23514");
+      await fresh.query("rollback to savepoint publication_eligibility");
+    }
+    await fresh.query("set local role service_role");
+    assert.equal(
+      (await publish()).rows[0].result.publicationStatus,
+      "published",
+    );
+    await fresh.query("savepoint publication_conflict");
+    await assert.rejects(publish(), (error) => error.code === "40001");
+    await fresh.query("rollback to savepoint publication_conflict");
+    assert.equal(
+      (await publish("published", "private")).rows[0].result.publicationStatus,
+      "private",
+    );
+    await fresh.query("reset role");
+    const publicationEvents = (
+      await fresh.query(
+        "select action,actor_id,reason from catalog.asset_version_events where version_id=$1 order by id desc limit 2",
+        [fixtureId],
+      )
+    ).rows;
+    assert.deepEqual(
+      publicationEvents.map((row) => row.action),
+      ["withdrawn", "published"],
+    );
+    assert.ok(
+      publicationEvents.every(
+        (row) =>
+          row.actor_id === actorId &&
+          row.reason === "Explicit publication fixture",
+      ),
+    );
+    assert.equal(
+      (
+        await fresh.query("select object_key from catalog.assets where id=$1", [
+          fixtureId,
+        ])
+      ).rows[0].object_key,
+      key,
+    );
+    console.log(
+      "PASS: publication requires active Super Admin/session, eligibility and expected state; publish/withdraw audit preserves originals.",
+    );
     await fresh.query("savepoint immutability_probe");
     await assert.rejects(
       fresh.query("update catalog.legacy_asset_imports set imported_at=now()"),
@@ -385,7 +496,7 @@ try {
     (error) => error.code === "P0001",
   );
   console.log(
-    "PASS: eight migrations on disposable PostgreSQL 17; empty/existing/ambiguous admin guards, 13 RLS tables, denied browser roles, transactional import registry and rollback-only asset-history SQL.",
+    "PASS: nine migrations on disposable PostgreSQL 17; empty/existing/ambiguous admin guards, 13 RLS tables, denied browser roles, transactional import/publication and rollback-only asset-history SQL.",
   );
   console.log(
     "Auth tables are a minimal SQL contract fixture; this is not a full Supabase Auth/API stack test.",
