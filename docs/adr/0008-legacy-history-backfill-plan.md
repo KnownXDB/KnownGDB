@@ -1,6 +1,6 @@
 # ADR 0008: Plan the legacy history backfill
 
-Date: 2026-10-20. Status: planner, executor and registry locally verified; remote application pending.
+Date: 2026-10-20. Status: implemented; hosted migration and six-version import independently verified.
 
 ## Decision
 
@@ -63,5 +63,9 @@ The executor additionally checks source/destination corruption, competing writes
 and interrupted registration. Native PostgreSQL verifies transactional rollback,
 locked snapshot comparisons, permissions and registry immutability. An SDK HTTP
 fixture verifies the conditional PUT header and independent GET. These checks do
-not perform hosted copies or apply remote migrations. See the
+not replace hosted acceptance. Subsequent authorized hosted execution applied
+`20261020210124_legacy_asset_import_registry`, copied six originals without
+overwrites, and registered six private versions/mappings. Independent reads
+verified all thirteen stored bodies and unchanged legacy assets/upload intents.
+No version was published and the incomplete upload was retained. See the
 [execution runbook](../LEGACY-IMPORT-RUNBOOK.md).

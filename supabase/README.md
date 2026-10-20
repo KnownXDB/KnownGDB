@@ -35,8 +35,9 @@ No hosted engine version changes. Full-stack acceptance uses Supabase's PG17 ima
 ## Full local Supabase stack
 
 The eighth migration adds the locally verified legacy import registry and guarded
-transactional RPC. It has not been applied to the hosted project, which still has
-the seven earlier migration records. See the [import runbook](../docs/LEGACY-IMPORT-RUNBOOK.md)
+transactional RPC. It is recorded as `20261020210124` in the hosted project after
+the seven earlier migrations; six private versions and mappings were verified.
+Its source digest matches the applied ledger statement. See the [import runbook](../docs/LEGACY-IMPORT-RUNBOOK.md)
 before any schema application or storage writes.
 
 Install a supported Docker-compatible runtime, then run `npm run db:start`.

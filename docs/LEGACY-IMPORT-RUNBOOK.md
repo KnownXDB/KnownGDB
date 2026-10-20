@@ -1,15 +1,17 @@
 # Legacy import execution
 
-Status: implemented and locally verified; not applied to hosted Supabase or R2.
+Status: executed and independently verified against hosted Supabase/R2 on 2026-10-20.
 This operation imports the six reconciled legacy originals as private versions.
 The existing published assets, their keys and the incomplete upload are preserved.
+The procedure below records the completed operation. Do not rerun the same plan
+or reapply the recorded migration; existing targets require explicit recovery review.
 
 ## Before application
 
 Review the [plan](adr/0008-legacy-history-backfill-plan.md), its private evidence
-and `20261020203548_legacy_asset_import_registry.sql`. Apply only this new migration
+and `20261020210124_legacy_asset_import_registry.sql`. This migration was applied
 through the separately authorized migration workflow; never replay the seven
-existing hosted migrations. The new schema adds a thirteenth catalog table with
+existing hosted migrations. The schema adds a thirteenth catalog table with
 RLS, restricted grants, composite game foreign keys and an immutable import record.
 It does not import data or change publication by itself.
 
@@ -90,9 +92,22 @@ new copies. Inspect the journal, destination hashes and database registry before
 deciding how to resume. The tool refuses existing targets, even identical ones;
 it does not implement automatic resumption, deletion or rollback in R2.
 
-Hosted acceptance must independently confirm six mappings, six private versions,
-six verified destination copies, unchanged legacy rows and all seven original
-objects. This acceptance has not occurred yet. Current validation covers native
-PostgreSQL transactions/permissions and controlled storage failure cases, plus
-real SDK HTTP requests against a local protocol fixture. It is not a claim of
-successful production S3 writes or deployed RPC acceptance.
+Independent hosted acceptance passed after the authorized execution:
+
+- Six collections, six private versions and six immutable import mappings.
+- Thirteen R2 objects: all seven originals plus six separately verified copies.
+- All thirteen bodies checked against their SHA-256 metadata and expected sizes.
+- Legacy assets and all upload-intent rows unchanged, including publication.
+- Complete source/upload snapshots and copy receipts match the approved plan.
+- Original creation times, language tags, uploader attribution and official credit preserved.
+- The incomplete upload remains retained and unregistered; zero new published versions.
+- Thirteen catalog tables have RLS; anon/authenticated cannot execute the import RPC.
+- The applied migration SHA-256 matches the tracked source exactly. The local
+  filename follows the version assigned by the hosted migration service; no
+  existing ledger record was rewritten.
+
+Local validation also covers PostgreSQL transaction/permission failures and SDK
+HTTP protocol behavior. Hosted success applies to this bounded six-original
+import, not general upload/moderation, gateway delivery or production certification.
+Detailed inventories, the progress journal and acceptance receipt remain ignored
+under `.local/`. No credentials or private object identifiers are recorded here.

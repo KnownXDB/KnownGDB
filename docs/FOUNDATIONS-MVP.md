@@ -27,8 +27,10 @@ The isolated database bootstrap also passed real local Auth/REST and browser mai
 flows; disposable acceptance accounts were removed and that stack was stopped.
 [Storage reconciliation](STORAGE-RECONCILIATION.md) verified all seven originals:
 six registered assets and one retained expired incomplete upload. Publishing
-forms, upload finalization, legacy-to-version backfill and the finished premium
-interfaces remain future feature slices.
+forms, upload finalization and the finished premium interfaces remain future
+feature slices. The subsequent authorized legacy import created six verified
+copies and private versions/mappings while preserving all original objects and
+legacy rows. Version publication and API read integration remain pending.
 
 ## Product outcome
 

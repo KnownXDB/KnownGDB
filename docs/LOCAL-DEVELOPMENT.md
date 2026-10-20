@@ -118,6 +118,7 @@ On the validated Windows workstation, Docker Desktop's `PortBindingBehavior` is
 Verify published addresses with `docker ps` after startup. See
 [Docker port binding policy](https://docs.docker.com/desktop/enterprise/hardened-desktop/settings-management/configure-json-file/).
 
-Never reset or replay migrations against the existing remote project. R2 uploads and reconciliation of
-the seven existing objects remain separate work. No cloud data is needed to edit
+Never reset or replay migrations against the existing remote project. R2 inventory
+and the six-version private backfill are [verified](LEGACY-IMPORT-RUNBOOK.md);
+general upload/moderation workflows remain separate work. No cloud data is needed to edit
 or build the frontends or run the local API policy tests.

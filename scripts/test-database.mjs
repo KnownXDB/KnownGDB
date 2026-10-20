@@ -12,14 +12,17 @@ import { planLegacyBackfill } from "./plan-legacy-backfill.ts";
 const provenance = JSON.parse(
   fs.readFileSync("supabase/migration-provenance.json", "utf8"),
 );
-for (const migration of provenance.recovered) {
+for (const migration of [
+  ...provenance.recovered,
+  ...(provenance.applied ?? []),
+]) {
   const content = fs.readFileSync(
     `supabase/migrations/${migration.version}_${migration.name}.sql`,
   );
   assert.equal(
     createHash("sha256").update(content).digest("hex"),
     migration.sha256,
-    `Recovered migration changed: ${migration.version}`,
+    `Recorded migration changed: ${migration.version}`,
   );
 }
 const require = createRequire(import.meta.url);

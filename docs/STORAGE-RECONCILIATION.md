@@ -2,6 +2,9 @@
 
 Verified: 2026-10-20. Scope: read-only inventory and byte integrity, not a data
 migration, publication decision or deletion approval.
+This records the seven-object snapshot before the separately authorized
+[six-version import](LEGACY-IMPORT-RUNBOOK.md). That later operation preserves
+these originals and adds six verified copies and private version mappings.
 
 ## Result
 
@@ -37,7 +40,7 @@ Existing keys use `originals/<game-id>/<asset-id>.<extension>` and agree with
 their canonical database identities. Keep these exact legacy pointers intact.
 They do not implement the newer chronological/version key layout.
 
-The newer collections and versions tables are empty. Reconciliation does not
+At this snapshot, the newer collections and versions tables were empty. Reconciliation does not
 silently backfill them, fabricate uploader credit, change review decisions or
 rename objects. A separate reviewed backfill must preserve the legacy-to-version
 mapping, original checksums, source/rights references, languages and audit history.

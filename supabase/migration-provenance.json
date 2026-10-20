@@ -33,6 +33,13 @@
       "sha256": "d19f88a5fc7a10c5c19073cf8c881e37b1b41334049894fe3f75182af90f3711"
     }
   ],
+  "applied": [
+    {
+      "version": "20261020210124",
+      "name": "legacy_asset_import_registry",
+      "sha256": "8c1f39a8c02387f25cdf1c8d6d7c46a9cb9432cc95c1edbf2e7f6182aee503f3"
+    }
+  ],
   "adaptation": {
     "version": "20261020004629",
     "remoteSha256": "ed155ec9eb630f04885d02d2851ca8498fd834095ab971502c7369f954c9973f",
