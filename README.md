@@ -8,7 +8,8 @@ identity service and curated asset platform.
 Executable local foundation: independent React/Vite web and admin applications,
 a shared TypeScript API, domain-policy tests and a Netlify Functions adapter.
 Search can read the existing published catalog when private API configuration is
-provided. Administrative sign-in, upload/moderation forms and premium product
+provided. Email/password sign-in, registration and an editable public contributor
+name are implemented through the API. Upload/moderation forms and premium product
 interfaces are not implemented yet. This is not the complete MVP.
 
 The existing Supabase database and private Cloudflare R2 bucket remain in place.
@@ -27,7 +28,8 @@ Frontend edits use HMR without a backend build or Docker. Run each separately
 with `npm run dev:web`, `npm run dev:admin` or `npm run dev:api`.
 
 For real catalog reads, copy `.env.example` to ignored `.env` and configure the
-private API credentials locally. Never use a Vite-prefixed secret. Restart the
+private API credentials locally. Run `npm run setup:session` for persistent
+HttpOnly account sessions. Never use a Vite-prefixed secret. Restart the
 API after changing its environment. `npm run check` runs formatting, types,
 tests and builds. See [local setup](docs/LOCAL-DEVELOPMENT.md).
 

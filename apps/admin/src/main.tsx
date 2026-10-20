@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { Health } from "@knowngdb/contracts";
 import "@knowngdb/ui/workspace.css";
+import { Account } from "@knowngdb/ui/account";
 
 function App() {
   const [health, setHealth] = useState<Health | null>(null);
@@ -27,6 +28,7 @@ function App() {
         <span>Administration workspace</span>
       </header>
       <main>
+        <Account admin />
         <h1>Catalog operations.</h1>
         <p>
           The administration application has its own entry point and build.
@@ -36,7 +38,7 @@ function App() {
         <p role={error ? "alert" : undefined}>
           {error ||
             (health
-              ? "Local API connected. No administrative session has been established."
+              ? "Local API connected. Administrative permission is verified when you sign in."
               : "Connecting to the API…")}
         </p>
         <h2>Publication identity</h2>
@@ -51,11 +53,7 @@ function App() {
           Publishing a new cover or logo must preserve earlier originals and
           their history.
         </p>
-        <p>
-          Sign-in, moderation and publication forms are the next feature slice.
-          This page does not grant administrative access or simulate a signed-in
-          user.
-        </p>
+        <p>Moderation and publication forms are not implemented yet.</p>
       </main>
     </>
   );

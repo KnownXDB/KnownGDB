@@ -1,10 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
 import { assetRoles, type GameSummary } from "@knowngdb/contracts";
 import { creditOptions } from "./asset-policy.ts";
+import { accountPaths, accountRequest } from "./account.ts";
+import { withSession } from "./session.ts";
 
 export interface ApiEnvironment {
   SUPABASE_URL?: string;
   SUPABASE_SECRET_KEY?: string;
+  ACCOUNT_RECOVERY_URL?: string;
+  SESSION_SECRET?: string;
 }
 const reply = (body: unknown, status = 200) =>
   Response.json(body, {
@@ -18,7 +22,33 @@ export async function handleRequest(
   request: Request,
   env: ApiEnvironment = process.env,
 ): Promise<Response> {
+  const requestUrl = new URL(request.url);
+  const path = requestUrl.pathname;
+  if (
+    (accountPaths.includes(path) || path === "/api/v1/admin/session") &&
+    requestUrl.protocol !== "https:" &&
+    !["localhost", "127.0.0.1"].includes(requestUrl.hostname)
+  )
+    return reply({ error: "HTTPS is required for account access." }, 403);
+  if (
+    [
+      "/api/v1/account/profile",
+      "/api/v1/account/session",
+      "/api/v1/account/logout",
+      "/api/v1/admin/session",
+    ].includes(path)
+  )
+    return withSession(request, env, (authenticated) =>
+      routeRequest(authenticated, env),
+    );
+  return routeRequest(request, env);
+}
+async function routeRequest(
+  request: Request,
+  env: ApiEnvironment,
+): Promise<Response> {
   const url = new URL(request.url);
+  if (accountPaths.includes(url.pathname)) return accountRequest(request, env);
   if (request.method !== "GET")
     return reply({ error: "Method not allowed." }, 405);
   if (url.pathname === "/api/v1/health")

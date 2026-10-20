@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { createRoot } from "react-dom/client";
 import type { GameSummary, Health } from "@knowngdb/contracts";
 import "@knowngdb/ui/workspace.css";
+import { Account } from "@knowngdb/ui/account";
 
 function App() {
   const [health, setHealth] = useState<Health | null>(null);
@@ -48,6 +49,7 @@ function App() {
         <span>Public workspace</span>
       </header>
       <main>
+        <Account />
         <h1>Find your next asset.</h1>
         <p>
           Search published games by title. Each canonical game keeps its own

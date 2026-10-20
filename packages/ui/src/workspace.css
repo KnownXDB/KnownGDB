@@ -102,6 +102,32 @@ code {
 [role="alert"] {
   color: #ffbdbd;
 }
+.account-placeholder {
+  min-height: 216px;
+  padding-top: 0.5rem;
+}
+.account-placeholder-line,
+.account-placeholder-field,
+.account-placeholder-button {
+  background: #1a2430;
+  border-radius: 6px;
+}
+.account-placeholder-line {
+  width: 240px;
+  max-width: 70%;
+  height: 20px;
+}
+.account-placeholder-field {
+  width: 38%;
+  min-width: 220px;
+  height: 50px;
+  margin-top: 3rem;
+}
+.account-placeholder-button {
+  width: 96px;
+  height: 48px;
+  margin-top: 2rem;
+}
 @media (max-width: 540px) {
   form {
     flex-direction: column;
