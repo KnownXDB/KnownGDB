@@ -9,7 +9,10 @@ Executable local foundation: independent React/Vite web and admin applications,
 a shared TypeScript API, domain-policy tests and a Netlify Functions adapter.
 Search can read the existing published catalog when private API configuration is
 provided. Email/password sign-in, registration and an editable public contributor
-name are implemented through the API. Upload/moderation forms and premium product
+name are implemented through the API. Paginated version history and explicit
+Super Admin publication/withdrawal with audit reasons are implemented. See
+[publication boundaries](docs/adr/0009-explicit-version-publication.md).
+Upload/moderation forms and premium product
 interfaces are not implemented yet. This is not the complete MVP.
 
 The existing Supabase database and private Cloudflare R2 bucket remain in place.

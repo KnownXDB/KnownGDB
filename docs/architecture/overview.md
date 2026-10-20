@@ -3,7 +3,9 @@
 KnownGDB is an autonomous catalog, identity and asset product. Its architecture
 prioritizes development speed and a stable API boundary. This revision defines
 responsibilities. The executable web/admin/API foundation is implemented; full
-product interfaces, authenticated publishing and ingestion remain pending.
+product interfaces and ingestion remain pending. Version metadata history and
+explicit Super Admin publication are implemented; see
+[ADR 0009](../adr/0009-explicit-version-publication.md).
 
 ## Workspace structure
 

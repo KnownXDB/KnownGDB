@@ -26,11 +26,13 @@ Automated browser checks use isolated Auth responses and do not create cloud use
 The isolated database bootstrap also passed real local Auth/REST and browser mail
 flows; disposable acceptance accounts were removed and that stack was stopped.
 [Storage reconciliation](STORAGE-RECONCILIATION.md) verified all seven originals:
-six registered assets and one retained expired incomplete upload. Publishing
-forms, upload finalization and the finished premium interfaces remain future
+six registered assets and one retained expired incomplete upload. Upload
+finalization and the finished premium interfaces remain future
 feature slices. The subsequent authorized legacy import created six verified
 copies and private versions/mappings while preserving all original objects and
-legacy rows. Version publication and API read integration remain pending.
+legacy rows. Version metadata reads and explicit Super Admin publication/withdrawal
+are implemented with audit reasons and conflict checks. Binary delivery remains
+pending; see [ADR 0009](adr/0009-explicit-version-publication.md).
 
 ## Product outcome
 
