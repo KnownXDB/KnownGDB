@@ -6,6 +6,7 @@ import { createServer } from "node:net";
 import { createHash, randomBytes } from "node:crypto";
 import { createRequire } from "node:module";
 import EmbeddedPostgres from "embedded-postgres";
+import { planLegacyBackfill } from "./plan-legacy-backfill.ts";
 
 // This runner has no remote URL option and never loads .env.
 const provenance = JSON.parse(
@@ -147,6 +148,110 @@ try {
       )
     ).rows[0].n,
     0,
+  );
+  // Exercise actual planner output against PostgreSQL, inside a rolled-back fixture.
+  await fresh.query("begin");
+  try {
+    const gameId = (await fresh.query("select id from catalog.games limit 1"))
+      .rows[0].id;
+    const fixtureId = "00000000-0000-4000-8000-000000000010";
+    const actorId = "00000000-0000-4000-8000-000000000001";
+    const checksum = "a".repeat(64);
+    const key = `originals/${gameId}/${fixtureId}.png`;
+    const source = {
+      id: fixtureId,
+      game_id: gameId,
+      role: "logo",
+      language_kind: "localized",
+      language_tags: ["en"],
+      object_key: key,
+      checksum_sha256: checksum,
+      provenance: "official",
+      source_reference: "https://example.invalid/fixture",
+      rights_reference: "Synthetic rights fixture",
+      confidence: 1,
+      rendition: "original",
+      moderation_status: "approved",
+      publication_status: "published",
+      created_at: "2026-10-01T00:00:00Z",
+      reviewed_at: "2026-10-02T00:00:00Z",
+      reviewed_by: actorId,
+      valid_from: null,
+      valid_until: null,
+      byte_size: 100,
+      mime_type: "image/png",
+      width: 16,
+      height: 16,
+    };
+    await fresh.query(
+      "insert into catalog.assets select (jsonb_populate_record(null::catalog.assets,$1::jsonb)).*",
+      [JSON.stringify(source)],
+    );
+    const input = {
+      checkedAt: "2026-10-20T00:00:00Z",
+      assets: [source],
+      uploads: [
+        {
+          object_key: key,
+          game_id: gameId,
+          actor_id: actorId,
+          completed_at: source.created_at,
+          expires_at: source.created_at,
+          metadata: { byte_size: 100, checksum_sha256: checksum },
+        },
+      ],
+      objects: [
+        {
+          key,
+          size: 100,
+          custom_metadata: { sha256: checksum },
+          http_metadata: { contentType: "image/png" },
+        },
+      ],
+      observations: [{ key, size: 100, sha256: checksum }],
+      members: [{ user_id: actorId, active: true, role: "super_admin" }],
+      existingCollectionIds: [],
+      existingVersionIds: [],
+    };
+    const entry = planLegacyBackfill(input).entries[0];
+    await fresh.query(
+      "insert into catalog.asset_collections select (jsonb_populate_record(null::catalog.asset_collections,$1::jsonb)).*",
+      [JSON.stringify(entry.collection)],
+    );
+    await fresh.query(
+      "insert into catalog.asset_versions select (jsonb_populate_record(null::catalog.asset_versions,$1::jsonb)).*",
+      [JSON.stringify(entry.version)],
+    );
+    const stored = (
+      await fresh.query(
+        "select object_key,publication_status,storage_verified_at,revision_number from catalog.asset_versions where id=$1",
+        [fixtureId],
+      )
+    ).rows[0];
+    assert.equal(stored.object_key, entry.copy.targetKey);
+    assert.equal(stored.publication_status, "private");
+    assert.equal(stored.storage_verified_at, null);
+    assert.equal(stored.revision_number, 1);
+    const legacy = (
+      await fresh.query(
+        "select object_key,publication_status from catalog.assets where id=$1",
+        [fixtureId],
+      )
+    ).rows[0];
+    assert.equal(legacy.object_key, key);
+    assert.equal(legacy.publication_status, "published");
+    await assert.rejects(
+      fresh.query(
+        "update catalog.asset_versions set publication_status='published',changed_by=$1 where id=$2",
+        [actorId, fixtureId],
+      ),
+      (error) => error.code === "23514",
+    );
+  } finally {
+    await fresh.query("rollback");
+  }
+  console.log(
+    "PASS: planned legacy imports satisfy real schema and remain private without destination storage verification; source rows are preserved.",
   );
   const existing = await database("existing");
   await apply(existing, sql.slice(0, 6));

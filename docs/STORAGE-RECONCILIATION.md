@@ -47,6 +47,14 @@ or infer that a newly copied object's storage date is its historical creation da
 
 ## Repeatable comparison
 
+The next phase has a [reviewable backfill plan](adr/0008-legacy-history-backfill-plan.md).
+Generate it with `npm run storage:plan-backfill -- <private-input.json> .local/<new-plan>.json`.
+The input extends the reconciliation inventory with complete legacy rows,
+completed-upload actor IDs, current administrative memberships and existing target
+IDs; see `BackfillInput` in [the planner](../scripts/plan-legacy-backfill.ts).
+Use a new output filename: the command refuses to overwrite plans. Output is
+private, contains no credentials, and does not execute copies or database writes.
+
 `npm run storage:reconcile -- <private-inventory.json>` compares a captured
 inventory without loading environment files, opening connections or writing data.
 It prints counts only and exits unsuccessfully on missing bodies, inconsistent

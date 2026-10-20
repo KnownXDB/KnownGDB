@@ -39,6 +39,8 @@ verified; unchecked items remain planned. This is not a production-ready MVP.
   and one retained expired incomplete upload; all seven body hashes verified.
 - [ ] Review and implement legacy-to-version backfill while preserving originals,
   credit, language metadata, review evidence and historical timestamps.
+  The offline six-version plan and schema compatibility checks are complete;
+  durable import mapping, copy executor and remote application remain pending.
 - [ ] Reuse the existing Netlify testing project; verify explicitly deployed web,
   admin and API URLs without enabling automatic repository builds.
 - [x] Document private runtime variables and storage permission boundaries.
