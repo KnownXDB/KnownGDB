@@ -9,15 +9,22 @@ Executable local foundation: independent React/Vite web and admin applications,
 a shared TypeScript API, domain-policy tests and a Netlify Functions adapter.
 Search can read the existing published catalog when private API configuration is
 provided. Email/password sign-in, registration and an editable public contributor
-name are implemented through the API. Upload/moderation forms and premium product
+name are implemented through the API. Paginated version history and explicit
+Super Admin publication/withdrawal with audit reasons are implemented. See
+[publication boundaries](docs/adr/0009-explicit-version-publication.md).
+Upload/moderation forms and premium product
 interfaces are not implemented yet. This is not the complete MVP.
 
 The existing Supabase database and private Cloudflare R2 bucket remain in place.
 An additive history/credit migration preserves the existing game and six legacy
 asset rows and designates the verified existing administrator as Super Admin.
 R2 originals have not been moved, overwritten or deleted. The seven-object
-inventory still needs reconciliation. Do not replay earlier migrations or reset
-the remote database.
+inventory is [reconciled](docs/STORAGE-RECONCILIATION.md): six registered originals
+and one retained incomplete upload. Six verified copies are now linked to private
+versions; legacy originals and published rows remain unchanged. See the
+[import acceptance](docs/LEGACY-IMPORT-RUNBOOK.md).
+Earlier schema migrations are recovered
+for local replay; never replay them against or reset the existing remote database.
 
 ## Local development
 
@@ -32,6 +39,13 @@ private API credentials locally. Run `npm run setup:session` for persistent
 HttpOnly account sessions. Never use a Vite-prefixed secret. Restart the
 API after changing its environment. `npm run check` runs formatting, types,
 tests and builds. See [local setup](docs/LOCAL-DEVELOPMENT.md).
+
+`npm run db:test` verifies migration replay on disposable PostgreSQL without
+Docker. Full Supabase Auth/API/mail startup uses `npm run db:start` and requires
+a Docker-compatible runtime. See [database scope](supabase/README.md) for
+provenance, the local replay adaptation and full-stack validation limits.
+After starting the stack, run `npm run db:configure:local` and `npm run dev:local`
+for isolated web/admin/API development. Hosted `.env` settings remain unchanged.
 
 ## Development direction
 

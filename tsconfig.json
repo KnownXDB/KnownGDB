@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["apps", "packages", "netlify", "tests/*.test.ts"]
+  "include": ["apps", "packages", "netlify", "tests/*.test.ts", "scripts/*.ts"]
 }

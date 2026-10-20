@@ -1,8 +1,15 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Recovery, startsInRecovery } from "./recovery.tsx";
+import type { AdminRole } from "@knowngdb/contracts";
 
 // Authentication material is owned by the API's HttpOnly cookie.
-export function Account({ admin = false }: { admin?: boolean }) {
+export function Account({
+  admin = false,
+  onRoleChange,
+}: {
+  admin?: boolean;
+  onRoleChange?: (role: AdminRole | null) => void;
+}) {
   const [signedIn, setSignedIn] = useState(false);
   const [restoring, setRestoring] = useState(true);
   const [name, setName] = useState("");
@@ -10,6 +17,14 @@ export function Account({ admin = false }: { admin?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [role, setRole] = useState("");
   const [recovering, setRecovering] = useState(startsInRecovery);
+  useEffect(() => {
+    if (!restoring)
+      onRoleChange?.(
+        admin && signedIn && (role === "super_admin" || role === "moderator")
+          ? role
+          : null,
+      );
+  }, [admin, signedIn, role, restoring, onRoleChange]);
   useEffect(() => {
     if (recovering) {
       setRestoring(false);
@@ -47,6 +62,8 @@ export function Account({ admin = false }: { admin?: boolean }) {
       }
     }
     void restore(true);
+    const sessionChanged = () => void restore(true);
+    window.addEventListener("knowngdb-session-changed", sessionChanged);
     const timer = setInterval(() => void restore(), 60_000);
     const channel =
       typeof BroadcastChannel !== "undefined"
@@ -57,6 +74,7 @@ export function Account({ admin = false }: { admin?: boolean }) {
       active = false;
       clearInterval(timer);
       channel?.close();
+      window.removeEventListener("knowngdb-session-changed", sessionChanged);
     };
   }, [admin, recovering]);
   function announceSession() {

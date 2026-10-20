@@ -3,6 +3,7 @@ import { assetRoles, type GameSummary } from "@knowngdb/contracts";
 import { creditOptions } from "./asset-policy.ts";
 import { accountPaths, accountRequest } from "./account.ts";
 import { withSession } from "./session.ts";
+import { isVersionRoute, versionRequest } from "./versions.ts";
 
 export interface ApiEnvironment {
   SUPABASE_URL?: string;
@@ -25,7 +26,7 @@ export async function handleRequest(
   const requestUrl = new URL(request.url);
   const path = requestUrl.pathname;
   if (
-    (accountPaths.includes(path) || path === "/api/v1/admin/session") &&
+    (accountPaths.includes(path) || path.startsWith("/api/v1/admin/")) &&
     requestUrl.protocol !== "https:" &&
     !["localhost", "127.0.0.1"].includes(requestUrl.hostname)
   )
@@ -36,7 +37,8 @@ export async function handleRequest(
       "/api/v1/account/session",
       "/api/v1/account/logout",
       "/api/v1/admin/session",
-    ].includes(path)
+    ].includes(path) ||
+    (isVersionRoute(path) && path.startsWith("/api/v1/admin/"))
   )
     return withSession(request, env, (authenticated) =>
       routeRequest(authenticated, env),
@@ -48,6 +50,7 @@ async function routeRequest(
   env: ApiEnvironment,
 ): Promise<Response> {
   const url = new URL(request.url);
+  if (isVersionRoute(url.pathname)) return versionRequest(request, env);
   if (accountPaths.includes(url.pathname)) return accountRequest(request, env);
   if (request.method !== "GET")
     return reply({ error: "Method not allowed." }, 405);

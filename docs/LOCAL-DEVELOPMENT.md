@@ -79,7 +79,8 @@ management. The connected Supabase tool session does not imply a CLI session.
 ## Checks and builds
 
 `npm run check` runs format verification, type checks, source-policy/API/domain
-unit tests and both production builds. `npm run build` assembles `dist/site`,
+unit tests, disposable PostgreSQL migration checks and both production builds.
+`npm run build` assembles `dist/site`,
 with the admin application under `admin/`. Generated output remains ignored.
 CI performs the same checks without production credentials. No command here
 publishes, deploys or applies remote migrations automatically.
@@ -90,8 +91,34 @@ The existing catalog was extended with immutable asset versions, public contribu
 profiles, publication identities and a guarded Super Admin designation. The
 existing game, six legacy asset rows and all R2 originals were preserved.
 
-See [migration scope](../supabase/README.md) before isolated database work. The
-older remote baseline must be recovered before claiming complete local Supabase
-bootstrap support; do not run a database reset. R2 uploads and reconciliation of
-the seven existing objects remain separate work. No cloud data is needed to edit
+See [migration scope](../supabase/README.md) before isolated database work. All
+migrations replay in disposable PostgreSQL with `npm run db:test`.
+The full local Supabase stack requires a running Docker-compatible engine:
+
+1. Run `npm run db:start` to start PostgreSQL, Auth, REST, Studio and local mail.
+2. Run `npm run db:configure:local` to write ignored `.local/supabase.env` without
+   displaying credentials. The existing root `.env` is preserved.
+3. Run `npm run dev:local` for web at http://127.0.0.1:5176/,
+   admin at http://127.0.0.1:5177/admin/ and API at http://127.0.0.1:8788/.
+4. Open http://127.0.0.1:54324/ for confirmation and recovery emails, and
+   http://127.0.0.1:54323/ for local Studio. Emails stay in the local mail service.
+5. Stop application processes with Ctrl+C and the stack with `npm run db:stop`.
+   Local database volumes are retained. `npm run db:reset:local` is destructive
+   to this local database and replays migrations without hosted data.
+
+The isolated stack was exercised with real PostgreSQL 17.11, Auth, REST and
+browser flows: registration/confirmation, profile persistence, role isolation,
+explicit local Super Admin membership, logout and email password recovery.
+Synthetic acceptance accounts were removed; a new installation grants no admin.
+Use a local-only port binding policy in Docker Desktop before startup; a localhost
+URL in CLI output alone does not establish network isolation.
+On the validated Windows workstation, Docker Desktop's `PortBindingBehavior` is
+`local-only-port-binding`; API, database, Studio and mail publish only on
+`127.0.0.1` and `::1`. This is a workstation setting, not a repository secret.
+Verify published addresses with `docker ps` after startup. See
+[Docker port binding policy](https://docs.docker.com/desktop/enterprise/hardened-desktop/settings-management/configure-json-file/).
+
+Never reset or replay migrations against the existing remote project. R2 inventory
+and the six-version private backfill are [verified](LEGACY-IMPORT-RUNBOOK.md);
+general upload/moderation workflows remain separate work. No cloud data is needed to edit
 or build the frontends or run the local API policy tests.

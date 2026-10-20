@@ -37,3 +37,16 @@ export interface AssetVersion {
   published: boolean;
   rightsVerified: boolean;
 }
+export interface VersionSummary extends AssetVersion {
+  collectionId: string;
+  revision: number;
+  provenance: "official" | "community";
+  credit: { kind: CreditKind; label: string };
+  storageVerified: boolean;
+  canPublish: boolean;
+  changeReason?: string;
+}
+export interface VersionPage {
+  versions: VersionSummary[];
+  nextCursor: string | null;
+}
