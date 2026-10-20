@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -33,7 +33,14 @@ try {
   const flags = ['--config', config, '--gitleaks-ignore-path', emptyIgnore, '--ignore-gitleaks-allow', '--redact', '--no-banner', '--log-level', 'error', '--timeout', '120'];
   stage = 'redacted content scan';
   execFileSync(executable, [...mode, ...flags], { stdio: 'inherit' });
-  if (!process.argv.includes('--staged')) execFileSync(executable, ['dir', '.', ...flags], { stdio: 'inherit' });
+  if (!process.argv.includes('--staged')) {
+    // Scan public working candidates in memory. Never copy private .env files,
+    // dependencies or build output into reports or a temporary source snapshot.
+    // Force-added ignored files are still covered by the Git history/index scan.
+    const files = new Set(execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean));
+    const input = Buffer.concat([...files].flatMap(file => [Buffer.from(`\nFile: ${file}\n`),readFileSync(file),Buffer.from('\n')]));
+    execFileSync(executable, ['stdin', ...flags], { input, stdio: ['pipe','inherit','inherit'] });
+  }
   console.log('Secret scan passed. Reports and binaries were not saved in the repository.');
 } catch {
   console.error(`Secret scan failed during ${stage}. Publication must stop; inspect only redacted diagnostics.`);

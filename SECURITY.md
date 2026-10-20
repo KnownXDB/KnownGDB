@@ -40,9 +40,15 @@ explicit step and protected environment.
 
 ## Status
 
-This revision contains foundations and repository CI only. Local hooks and CI
+This revision contains executable local foundations and repository CI. Local hooks and CI
 check source hygiene and run a pinned secret scanner with redacted diagnostics.
 Platform secret scanning and push protection complement review; none guarantees
 that every secret is detected. Authentication, authorization and deployment are
-not implemented. Existing hosted infrastructure has not been
-changed or recertified by this repository reset. No production release is supported.
+not fully implemented for production. Email/password sign-in and contributor
+profile editing use server-side identity checks and encrypted HttpOnly session cookies.
+There are no administrative publication write endpoints. See
+[persistent sessions](docs/adr/0006-persistent-account-sessions.md) for token revocation,
+MFA and hosted abuse-control limitations. The additive asset-history
+migration was transaction-tested and preserves the existing catalog; hosted upload
+authorization and file validation have not been certified. No production release
+is supported.

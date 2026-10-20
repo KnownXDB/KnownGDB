@@ -1,0 +1,43 @@
+{
+  "name": "knowngdb",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "setup:session": "node scripts/configure-session.mjs",
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "npm run dev -w @knowngdb/web",
+    "dev:admin": "npm run dev -w @knowngdb/admin",
+    "dev:api": "tsx watch --env-file-if-exists=.env apps/api/src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "format:check": "prettier --check apps packages netlify scripts/dev.mjs scripts/build.mjs scripts/configure-session.mjs tests/*.test.ts tsconfig.json package.json",
+    "test": "node --test tests/repository-policy.test.mjs && tsx --test tests/*.test.ts",
+    "build": "npm run typecheck && node scripts/build.mjs",
+    "check": "npm run format:check && npm run typecheck && npm test && npm run build"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.118.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "prettier": "3.9.10",
+    "supabase": "2.121.0",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vite": "8.3.4"
+  }
+}

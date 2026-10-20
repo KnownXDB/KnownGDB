@@ -1,0 +1,13 @@
+{
+  "name": "@knowngdb/admin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build --config vite.config.ts",
+    "dev": "vite --config vite.config.ts"
+  },
+  "dependencies": {
+    "@knowngdb/ui": "*",
+    "@knowngdb/contracts": "*"
+  }
+}

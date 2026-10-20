@@ -5,20 +5,40 @@ identity service and curated asset platform.
 
 ## Status
 
-Foundation reset. This repository contains product rules, governance, repository
-checks and the architecture for a new implementation. There is no application
-code, dependency installation, development server or deployment in this revision.
+Executable local foundation: independent React/Vite web and admin applications,
+a shared TypeScript API, domain-policy tests and a Netlify Functions adapter.
+Search can read the existing published catalog when private API configuration is
+provided. Email/password sign-in, registration and an editable public contributor
+name are implemented through the API. Upload/moderation forms and premium product
+interfaces are not implemented yet. This is not the complete MVP.
 
-The existing Supabase database and Cloudflare R2 bucket remain in place. Resetting
-this repository does not reset, migrate or delete their data. Before reconnecting,
-inspect the existing schema, permissions and assets; do not replay old migrations
-or assume the database is empty.
+The existing Supabase database and private Cloudflare R2 bucket remain in place.
+An additive history/credit migration preserves the existing game and six legacy
+asset rows and designates the verified existing administrator as Super Admin.
+R2 originals have not been moved, overwritten or deleted. The seven-object
+inventory still needs reconciliation. Do not replay earlier migrations or reset
+the remote database.
+
+## Local development
+
+With Node.js 22.12+ installed, run `npm ci --ignore-scripts`, then `npm run dev`.
+Web runs at `http://127.0.0.1:5173/`, admin at
+`http://127.0.0.1:5174/admin/` and API at `http://127.0.0.1:8787/api/v1/health`.
+Frontend edits use HMR without a backend build or Docker. Run each separately
+with `npm run dev:web`, `npm run dev:admin` or `npm run dev:api`.
+
+For real catalog reads, copy `.env.example` to ignored `.env` and configure the
+private API credentials locally. Run `npm run setup:session` for persistent
+HttpOnly account sessions. Never use a Vite-prefixed secret. Restart the
+API after changing its environment. `npm run check` runs formatting, types,
+tests and builds. See [local setup](docs/LOCAL-DEVELOPMENT.md).
 
 ## Development direction
 
 - Public web: React, Vite, TypeScript and Tailwind CSS.
 - Administration: a separate React/Vite application with a premium interface.
-- API: a small TypeScript service on Cloudflare Workers, developed locally.
+- API: shared TypeScript handlers developed locally, with a Netlify Functions
+  adapter for explicitly deployed external testing.
 - Database and authentication: Supabase, using its official tooling and SDK.
 - Private immutable asset storage: Cloudflare R2.
 - Source control and verification: GitHub.
@@ -44,6 +64,8 @@ consumers, distribution channels and external identifiers.
 - [Governance](GOVERNANCE.md)
 - [Contributing](CONTRIBUTING.md)
 - [Git workflow and tracking](docs/GIT-WORKFLOW.md)
+- [Foundations audit and MVP execution plan](docs/FOUNDATIONS-MVP.md)
+- [Netlify testing decision](docs/adr/0003-netlify-testing-and-media-boundaries.md)
 
 ## License
 

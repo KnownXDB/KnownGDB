@@ -20,7 +20,10 @@ cropping or conversion. ICO is accepted as an original client_icon, preserving
 all embedded images without requiring a specific resolution. Its metadata
 describes the embedded image with the largest area. Review technical limits
 before implementing ingestion, without changing existing originals.
-WebP, video and animation are outside the first phase.
+WebP and animation are outside the first image-upload phase. The MVP additionally
+includes a separately validated hybrid trailer capability: external references
+and authorized originals preserved in private R2. See
+[the execution plan](FOUNDATIONS-MVP.md) for sequence and acceptance.
 
 ## Context and history
 
@@ -72,11 +75,19 @@ exceptions and record changes. The panel issues, rotates and revokes scoped keys
 shows metrics and assigns plans. Do not set figures without estimation and
 measurement. Decide on a shared cross-instance mechanism before scaling.
 
-## Future multimedia
+## Hybrid multimedia and preservation
 
 Original trailers, photographs and videos require provenance, rights, language,
 duration and technical metadata. Developer submissions precede community
-multimedia contributions. Do not implement transcoding or distribution yet.
+multimedia contributions. External references may be paired with authorized
+preserved originals so retired sources do not automatically erase access or
+history. Source availability, preservation status and publication are independent.
+
+The first trailer slice validates an explicit format/codec allowlist and supports
+approved original playback/download with range requests. Hosted copies remain
+private until rights and moderation permit publication. Preserve original bytes;
+transcoding and adaptive renditions are separate future capabilities. Do not
+enable arbitrary file formats or automatically mirror arbitrary source URLs.
 
 ## Repository language and public quality
 

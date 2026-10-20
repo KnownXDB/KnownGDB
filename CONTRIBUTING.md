@@ -14,7 +14,7 @@ their purpose and operational cost. Do not invent project IDs or production data
 Start work from `develop` using the [Git workflow](docs/GIT-WORKFLOW.md). Enable
 the versioned local hooks, pass repository policy and secret scanning before push,
 and open a PR assigned to `@mvuljevas`. Add its linked issue to the repository
-project. Application checks will be introduced with the workspace. For foundation
+project. Run `npm run check` for application checks. For foundation
 changes, verify links, UTF-8/LF, consistency, tests and staged content. Run all
 applicable checks before declaring a change complete.
 
