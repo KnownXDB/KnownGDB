@@ -15,7 +15,7 @@ apps/
 packages/
   contracts/       Shared domain types and role taxonomy
   ui/              Account/recovery components and shared workspace styling
-supabase/          Additive migration and rollback-only SQL tests; baseline incomplete
+supabase/          Recovered migrations, local stack configuration and SQL tests
 netlify/           Thin Functions adapter for external testing
 docs/             Rules and decisions
 ```

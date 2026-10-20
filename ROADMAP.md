@@ -28,9 +28,10 @@ verified; unchecked items remain planned. This is not a production-ready MVP.
 ## 2. Infrastructure connection
 
 - [x] Inspect existing Supabase schema, migrations, Auth, RLS and permissions.
-- [ ] Recover the six earlier migrations for a complete isolated database baseline.
+- [x] Recover the six earlier schema migrations and verify their provenance.
+- [x] Replay all seven migrations and verify guards/RLS in disposable PostgreSQL.
 - [x] Configure private local API access to the existing Supabase catalog.
-- [ ] Complete isolated database startup using the official CLI and reviewed baseline.
+- [x] Complete isolated database startup using the official CLI and reviewed baseline.
 - [x] Shared local TypeScript API and Netlify Functions testing adapter.
 - [x] Preserve private R2 storage and ignore local asset/runtime data.
 - [ ] Reconcile the seven existing R2 objects with legacy database asset rows.

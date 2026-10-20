@@ -33,11 +33,18 @@ This is not production certification or hosted deployment acceptance.
 - CI remains verification-only. No deployment, release, additional migration,
   R2 object change or remote Auth configuration change accompanies integration.
 
-The current roadmap distinguishes completed foundations from pending database
-baseline recovery, R2 reconciliation, authenticated ingestion/moderation and
+The current roadmap distinguishes completed foundations from pending
+R2 reconciliation, authenticated ingestion/moderation and
 premium product interfaces. Hosted runtime validation, MFA and stronger revocation
 controls remain prerequisites for production administration. See
 [session boundaries](adr/0006-persistent-account-sessions.md).
+
+Baseline follow-up: six original migrations were recovered read-only and their
+digests verified. All seven replay on disposable PostgreSQL with role/guard tests.
+The full local Supabase stack also passed real browser account flows on PostgreSQL
+17.11, including captured confirmation/recovery mail and server-enforced roles.
+Synthetic accounts were removed without accessing hosted Auth data. See
+[ADR 0007](adr/0007-recovered-local-database-baseline.md) for the local adaptation.
 
 Promotion acceptance requires successful CI and local checks on the exact
 integrated develop commit, then a separate reviewed develop-to-main PR. Public

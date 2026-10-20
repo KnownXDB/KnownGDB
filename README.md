@@ -16,8 +16,8 @@ The existing Supabase database and private Cloudflare R2 bucket remain in place.
 An additive history/credit migration preserves the existing game and six legacy
 asset rows and designates the verified existing administrator as Super Admin.
 R2 originals have not been moved, overwritten or deleted. The seven-object
-inventory still needs reconciliation. Do not replay earlier migrations or reset
-the remote database.
+inventory still needs reconciliation. Earlier schema migrations are recovered
+for local replay; never replay them against or reset the existing remote database.
 
 ## Local development
 
@@ -32,6 +32,13 @@ private API credentials locally. Run `npm run setup:session` for persistent
 HttpOnly account sessions. Never use a Vite-prefixed secret. Restart the
 API after changing its environment. `npm run check` runs formatting, types,
 tests and builds. See [local setup](docs/LOCAL-DEVELOPMENT.md).
+
+`npm run db:test` verifies migration replay on disposable PostgreSQL without
+Docker. Full Supabase Auth/API/mail startup uses `npm run db:start` and requires
+a Docker-compatible runtime. See [database scope](supabase/README.md) for
+provenance, the local replay adaptation and full-stack validation limits.
+After starting the stack, run `npm run db:configure:local` and `npm run dev:local`
+for isolated web/admin/API development. Hosted `.env` settings remain unchanged.
 
 ## Development direction
 
