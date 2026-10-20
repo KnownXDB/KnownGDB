@@ -34,7 +34,7 @@ This is not production certification or hosted deployment acceptance.
   R2 object change or remote Auth configuration change accompanies integration.
 
 The current roadmap distinguishes completed foundations from pending
-R2 reconciliation, authenticated ingestion/moderation and
+legacy-to-version backfill, authenticated ingestion/moderation and
 premium product interfaces. Hosted runtime validation, MFA and stronger revocation
 controls remain prerequisites for production administration. See
 [session boundaries](adr/0006-persistent-account-sessions.md).
@@ -45,6 +45,10 @@ The full local Supabase stack also passed real browser account flows on PostgreS
 17.11, including captured confirmation/recovery mail and server-enforced roles.
 Synthetic accounts were removed without accessing hosted Auth data. See
 [ADR 0007](adr/0007-recovered-local-database-baseline.md) for the local adaptation.
+
+Storage follow-up: [read-only reconciliation](STORAGE-RECONCILIATION.md) verified
+six registered R2 originals and one expired incomplete upload against independent
+body hashes. All seven are preserved; no hosted rows or objects were changed.
 
 Promotion acceptance requires successful CI and local checks on the exact
 integrated develop commit, then a separate reviewed develop-to-main PR. Public

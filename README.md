@@ -16,7 +16,9 @@ The existing Supabase database and private Cloudflare R2 bucket remain in place.
 An additive history/credit migration preserves the existing game and six legacy
 asset rows and designates the verified existing administrator as Super Admin.
 R2 originals have not been moved, overwritten or deleted. The seven-object
-inventory still needs reconciliation. Earlier schema migrations are recovered
+inventory is [reconciled](docs/STORAGE-RECONCILIATION.md): six registered originals
+and one retained incomplete upload. Legacy-to-version backfill remains pending.
+Earlier schema migrations are recovered
 for local replay; never replay them against or reset the existing remote database.
 
 ## Local development
