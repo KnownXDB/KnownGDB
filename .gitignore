@@ -8,6 +8,16 @@ vendor/
 .env
 .env.*
 !.env.example
+.envrc
+.npmrc
+.netrc
+_netrc
+.git-credentials
+.htpasswd
+.aws/
+.azure/
+.ssh/
+.gnupg/
 .dev.vars
 .dev.vars.*
 *.pem
@@ -44,6 +54,11 @@ videos/
 *.temp
 *.swp
 *.swo
+*.orig
+*.rej
+*.bak
+*.stackdump
+*~
 *.log
 tmp/
 temp/
@@ -64,9 +79,19 @@ Desktop.ini
 $RECYCLE.BIN/
 .Spotlight-V100
 .Trashes
+.fseventsd/
+.TemporaryItems/
+.VolumeIcon.icns
+.LSOverride
+ehthumbs.db
+ehthumbs_vista.db
+Thumbs.db:encryptable
+*.lnk
 
 # IDEs and editors
 .idea/
+.history/
+.fleet/
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.example.json
@@ -87,6 +112,11 @@ lerna-debug.log*
 .netlify/
 terraform.tfstate*
 .terraform/
+supabase/.temp/
+supabase/.branches/
+supabase/.cache/
+*.tfvars
+*.tfvars.json
 
 # Private credentials, session state and database exports
 secrets/
@@ -103,6 +133,16 @@ service-account*.json
 *.sql.gz
 storage-state*.json
 auth-state*.json
+session-state*.json
+cookies*.json
+id_rsa*
+id_ed25519*
+*.seed
 playwright/.auth/
 uploads/
 artifacts/
+
+# Local scanning and diagnostics
+*secret-scan-report*
+gitleaks-report.*
+*.sarif

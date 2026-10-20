@@ -1,58 +1,71 @@
 # Roadmap
 
-Estado: fundamentos. La implementación anterior ha sido retirada del árbol de
-trabajo. Este documento describe trabajo futuro, no capacidades disponibles.
+Status: executable local foundation. Checked items are implemented and locally
+verified; unchecked items remain planned. This is not a production-ready MVP.
 
-## 0. Fundamentos
+## 0. Foundations
 
-- [x] Conservar autonomía, políticas del dominio, seguridad, gobernanza y licencia.
-- [x] Registrar arquitectura orientada al desarrollo local.
-- [x] Separar responsabilidades de web, admin, API y plataformas.
-- [x] Retirar implementación, dependencias y configuraciones del enfoque anterior.
+- [x] Preserve autonomy, domain policies, security, governance and licensing.
+- [x] Record an architecture focused on local development.
+- [x] Separate web, admin, API and platform responsibilities.
+- [x] Remove the previous implementation, dependencies and configuration.
 
-## 1. Workspace local
+## 1. Local workspace
 
-- React + Vite + TypeScript + Tailwind para web y admin independientes.
-- npm workspaces; contratos y componentes compartidos pequeños.
-- Comandos simples de desarrollo, formato, lint, tipos, tests y build.
-- HMR directo; sin Docker, certificados locales ni build previo del backend
-  para trabajar en frontend.
-- API local con proxy de Vite; fixtures explícitos y deterministas para diseño.
-- CI en GitHub sin secretos de producción ni despliegue implícito.
-- Aceptación: una instalación limpia inicia ambas interfaces por separado,
-  refleja cambios con HMR y construye cada aplicación de manera independiente.
+- [x] React + Vite + TypeScript + Tailwind for independent web and admin applications.
+- [x] npm workspaces with small shared contracts and components.
+- [x] Commands for development, formatting, source policy, types, tests and builds.
+- [x] Direct HMR; no Docker, local certificates or prior backend build required
+  for frontend development.
+- [x] Local API with a Vite proxy and real published-catalog search.
+- [ ] Explicit deterministic design fixtures for future premium screens.
+- [x] Repository hygiene and secret-scanning CI, without implicit deployment.
+- [x] Protected branch workflow, PR assignment and a tracking project.
+- [x] Application CI for formatting, source policy, types, tests and builds.
+- Acceptance: a clean installation starts both interfaces independently,
+  reflects edits through HMR and builds each application separately.
 
-## 2. Conexión de infraestructura
+## 2. Infrastructure connection
 
-- Inspeccionar Supabase existente: esquema, migrations, Auth, RLS y permisos.
-- Establecer baseline sin recrear ni sobrescribir datos remotos.
-- Configurar conexión local a un entorno de desarrollo autorizado de Supabase.
-- Opción local con CLI oficial para cambios aislados en base de datos.
-- Worker con R2 privado y almacenamiento local para desarrollo de assets.
-- Documentar variables privadas, bindings y despliegue manual en Cloudflare.
-- Aceptación: lectura real por API con permisos comprobados; pruebas de
-  autorización negativa; ninguna credencial privilegiada en bundles.
+- [x] Inspect existing Supabase schema, migrations, Auth, RLS and permissions.
+- [ ] Recover the six earlier migrations for a complete isolated database baseline.
+- [x] Configure private local API access to the existing Supabase catalog.
+- [ ] Complete isolated database startup using the official CLI and reviewed baseline.
+- [x] Shared local TypeScript API and Netlify Functions testing adapter.
+- [x] Preserve private R2 storage and ignore local asset/runtime data.
+- [ ] Reconcile the seven existing R2 objects with legacy database asset rows.
+- [ ] Reuse the existing Netlify testing project; verify explicitly deployed web,
+  admin and API URLs without enabling automatic repository builds.
+- [x] Document private runtime variables and storage permission boundaries.
+- Acceptance: real API reads with verified permissions; negative authorization
+  tests; no privileged credentials in frontend bundles.
 
-## 3. Experiencia pública
+## 3. Public experience
 
-- Definir tokens, tipografía, navegación, densidad y estados responsive.
-- Catálogo visual centrado en assets: búsqueda, filtros, galería y detalle.
-- Diferenciar Game, releases, idiomas, procedencia y estado de publicación.
-- Estados vacíos, carga y error; accesibilidad, teclado y contraste comprobados.
-- Diseño premium con identidad propia y contenido autorizado.
+- Define tokens, typography, navigation, density and responsive states.
+- Asset-focused visual catalog: search, filters, galleries and detail views.
+- Distinguish Game, releases, languages, provenance and publication status.
+- Empty, loading and error states; verified accessibility, keyboard use and contrast.
+- Premium design with its own identity and authorized content.
 
-## 4. Administración
+## 4. Administration
 
-- Diseño premium propio, navegación y build independientes de la web pública.
-- Sesiones individuales y autorización en API, con auditoría.
-- Catálogo, traducciones, releases, identidad, assets y moderación.
-- Formularios y operaciones reales con validación y feedback.
-- MFA, revocación y recuperación comprobadas antes de producción.
+- Distinct premium design, navigation and build independent of the public web.
+- [x] Individual sign-in, email recovery, persistent HttpOnly sessions and server role checks.
+- [x] Contributor public names and immutable asset history/credit schema.
+- [ ] Administrative operation auditing and complete publication/moderation workflows.
+- Catalog, translations, releases, identity, assets and moderation.
+- Real forms and operations with validation and feedback.
+- Hybrid trailer references and approved preserved R2 originals, with source
+  availability independent of retention, rights and public access.
+- Video allowlist validation and range-capable original playback/download;
+  preservation must survive source retirement without losing provenance.
+- Verified MFA, revocation and recovery before production use.
 
-## 5. Publicación y evolución
+## 5. Publication and evolution
 
-- API versionada, acceso, planes, scopes, cuotas y controles de abuso.
-- Validar backups, recuperación, derechos y políticas antes de publicación.
-- Despliegues explícitos, observables y recuperables.
-- Búsqueda dedicada, trabajos asíncronos y multimedia cuando la evidencia
-  justifique su coste.
+- Versioned API, access, plans, scopes, quotas and abuse controls.
+- Validate backups, recovery, rights and policies before publication.
+- Explicit, observable and recoverable deployments.
+- Dedicated search, asynchronous jobs and multimedia when evidence justifies
+  their operational cost.

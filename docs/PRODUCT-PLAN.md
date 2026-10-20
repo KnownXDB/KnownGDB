@@ -1,82 +1,99 @@
-# Políticas de producto
+# Product policies
 
-Estas reglas definen alcance acordado; no capacidades implementadas.
+These rules define agreed scope, not implemented capabilities.
 
-## Assets iniciales
+## Initial assets
 
-| Rol | Dimensiones de referencia (no obligatorias) | Uso |
+| Role | Reference dimensions (not mandatory) | Purpose |
 | --- | --- | --- |
-| header | 920 × 430 | Tarjeta horizontal |
-| capsule | 600 × 900 | Portada vertical |
-| hero | 3840 × 1240 | Fondo panorámico |
-| logo | Lado dominante de 1280 en contenido visible | Marca, preferentemente transparente |
-| icon | 32 × 32 | Representación pequeña |
-| client_icon | 256 × 256 | Aplicación o acceso directo |
+| header | 920 × 430 | Horizontal card |
+| capsule | 600 × 900 | Vertical cover |
+| hero | 3840 × 1240 | Panoramic background |
+| logo | Dominant visible-content dimension of 1280 | Brand mark, preferably transparent |
+| icon | 32 × 32 | Small representation |
+| client_icon | 256 × 256 | Application or shortcut |
 
-JPEG o PNG para cualquier rol; PNG admite transparencia. Las dimensiones,
-proporciones, transparencia y ausencia de márgenes son recomendaciones, no
-requisitos de subida. Se conservan los bytes y medidas originales sin ampliar,
-recortar ni convertir. ICO se admite como original para client_icon, conservando
-todas sus imágenes internas sin exigir una resolución concreta. Su metadata
-describe la imagen interna de mayor área. Los límites técnicos se revisarán antes
-de implementar la ingesta, sin alterar los originales existentes.
-WebP, vídeo y animación quedan fuera de la primera etapa.
+JPEG or PNG is accepted for any role; PNG supports transparency. Dimensions,
+aspect ratios, transparency and the absence of margins are recommendations,
+not upload requirements. Preserve original bytes and dimensions without upscaling,
+cropping or conversion. ICO is accepted as an original client_icon, preserving
+all embedded images without requiring a specific resolution. Its metadata
+describes the embedded image with the largest area. Review technical limits
+before implementing ingestion, without changing existing originals.
+WebP and animation are outside the first image-upload phase. The MVP additionally
+includes a separately validated hybrid trailer capability: external references
+and authorized originals preserved in private R2. See
+[the execution plan](FOUNDATIONS-MVP.md) for sequence and acceptance.
 
-## Contexto e historial
+## Context and history
 
-Archivos inmutables con checksum. Asignaciones por juego o release, idioma,
-región y vigencia. Eventos y temporadas no cambian Game.id. Mantener asset base
-y fallback determinista tras expiración. La API declara idioma y contexto efectivo.
+Files are immutable and checksummed. Assignments specify game or release,
+language, region and validity period. Events and seasons do not change Game.id.
+Keep a base asset and deterministic fallback after expiration. The API declares
+the effective language and context.
 
-Global significa sin idioma: contenido sin texto lingüístico. No es una región ni
-un idioma desconocido. Cada pieza se clasifica como Global o por idiomas reales;
-EN, ES y variantes localizadas pertenecen al mismo Game. Ningún rol es Global
-por defecto. Contributors eligen idioma o Global y moderación verifica la elección.
+Global means language-neutral content without linguistic text. It is neither
+a region nor an unknown language. Classify each piece as Global or by its actual
+languages; EN, ES and localized variants belong to the same Game. No role is
+Global by default. Contributors select languages or Global; moderation verifies
+that selection.
 
-API y web priorizan originales oficiales aprobados, con derechos de distribución.
-Separar procedencia oficial/comunitaria de original/derivado. No presentar una
-imagen normalizada como original ni publicar fuentes incompatibles automáticamente.
-El modelo, filtros y fallback deberán verificarse al implementar este contrato.
+The API and web prioritize approved official originals with distribution rights.
+Separate official/community provenance from original/derivative classification.
+Do not present normalized images as originals or automatically publish sources
+with incompatible terms. Verify the model, filters and fallback when implementing
+this contract.
 
-## Moderación
+## Moderation
 
-Validar firma, decodificación, formato, límites de bytes y píxeles y duplicados
-exactos. Las medidas y transparencia son referencias editoriales. Revisar legibilidad, composición,
-nitidez, correspondencia, marcas de agua y derechos de distribución.
-Traducir calidad editorial en criterios observables, no etiquetas subjetivas.
+Validate file signatures, decoding, format, byte and pixel limits, and exact
+duplicates. Dimensions and transparency are editorial guidance. Review legibility,
+composition, sharpness, subject correspondence, watermarks and distribution rights.
+Express editorial quality through observable criteria rather than subjective labels.
 
-Estados submitted, in_review, approved, rejected y withdrawn; publicación y
-vigencia separadas. Registrar revisor, fecha y motivo. Cambiar bytes exige nueva
-revisión. Contenido pendiente o rechazado nunca es público.
-Procedencia oficial no equivale a permiso de redistribución.
+States: submitted, in_review, approved, rejected and withdrawn; publication and
+validity remain separate. Record reviewer, date and reason. Changing bytes requires
+a new review. Pending or rejected content is never public. Official provenance
+does not imply permission to redistribute.
 
-## Administración
+## Administration
 
-Gestionar información, traducciones, organizaciones, géneros, releases, fuentes,
-assets y decisiones. Auditar fusiones y correcciones. Separar permisos de catálogo,
-moderación y acceso. Registrar autor, fecha y motivo de cambios sensibles.
+Manage information, translations, organizations, genres, releases, sources,
+assets and decisions. Audit merges and corrections. Separate catalog, moderation
+and access permissions. Record author, date and reason for sensitive changes.
 
-## Planes de API
+## API plans
 
-Rol de colaboración, plan comercial y permisos son conceptos separados.
-Público tiene caps base; contributors y partners caps mayores configurables.
-Partners premium no tienen cuota comercial, pero conservan controles operativos
-de concurrencia, tamaño y abuso para proteger disponibilidad.
+Collaboration role, commercial plan and permissions are separate concepts.
+Public access has baseline caps; contributors and partners have configurable
+higher caps. Premium partners have no commercial quota but retain operational
+concurrency, size and abuse controls to protect availability.
 
-Administrar solicitudes por intervalo, ráfagas, cuotas, concurrencia y transferencia.
-Agregar consumo por organización, separar descarga de metadata, permitir excepciones
-temporales y registrar cambios. El panel emite, rota y revoca claves con scopes,
-consulta métricas y asigna planes. No fijar cifras sin estimación y medición.
-El mecanismo compartido entre instancias requiere decisión antes de escalar.
+Manage requests per interval, bursts, quotas, concurrency and transfer. Aggregate
+usage by organization, separate file downloads from metadata access, allow temporary
+exceptions and record changes. The panel issues, rotates and revokes scoped keys,
+shows metrics and assigns plans. Do not set figures without estimation and
+measurement. Decide on a shared cross-instance mechanism before scaling.
 
-## Multimedia futura
+## Hybrid multimedia and preservation
 
-Trailers, fotografías y vídeos originales requieren procedencia, derechos, idioma,
-duración y metadata técnica. Ingreso de desarrolladores precede contribución
-comunitaria multimedia. No implementar aún transcodificación ni distribución.
+Original trailers, photographs and videos require provenance, rights, language,
+duration and technical metadata. Developer submissions precede community
+multimedia contributions. External references may be paired with authorized
+preserved originals so retired sources do not automatically erase access or
+history. Source availability, preservation status and publication are independent.
 
-## Localización y calidad pública
+The first trailer slice validates an explicit format/codec allowlist and supports
+approved original playback/download with range requests. Hosted copies remain
+private until rights and moderation permit publication. Preserve original bytes;
+transcoding and adaptive renditions are separate future capabilities. Do not
+enable arbitrary file formats or automatically mirror arbitrary source URLs.
 
-Inglés para código y README principal; documentación inglesa y española revisada.
-Una fuente versionada alimentará wiki, con revisión de referencia por traducción.
-No publicar binarios de referencia ni contenido sin derechos documentados.
+## Repository language and public quality
+
+Use English for code, comments, README, documentation, issue and PR text, labels,
+and project metadata. This supersedes the earlier bilingual documentation plan.
+The catalog continues to support localized game information and assets; English
+repository content does not restrict supported catalog languages or proper names.
+A versioned source will feed the wiki. Do not publish reference binaries or
+content without documented rights.

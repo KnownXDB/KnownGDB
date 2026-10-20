@@ -1,25 +1,34 @@
-# Gobernanza
+# Governance
 
-Autor y mantenedor inicial: Mauricio Vuljevas (@mvuljevas).
-Repositorio canónico: https://github.com/KnownXDB/KnownGDB.
+Initial author and maintainer: Mauricio Vuljevas (@mvuljevas).
+Canonical repository: https://github.com/KnownXDB/KnownGDB.
 
-KnownGDB es autónomo. Ningún consumidor, proveedor o producto externo determina
-su modelo. No hay dominio oficial definido en estos fundamentos.
+KnownGDB is autonomous. No external consumer, provider or product determines its
+model. These foundations do not define an official domain.
 
-Código y documentación original bajo MIT, según LICENSE. La licencia no concede
-derechos sobre marcas, medios o datos externos. Los assets y datos requieren
-procedencia y condiciones de distribución propias. Contribuciones conservan
-autoría. No presentar forks como servicio oficial.
+Original code and documentation are MIT-licensed, as stated in LICENSE. The
+license does not grant rights to external trademarks, media or data. Assets and
+data require their own provenance and distribution terms. Contributors retain
+authorship. Do not present forks as the official service.
 
-Decisiones estructurales requieren ADR. Cambios de permisos, visibilidad,
-publicación y configuración de infraestructura requieren autorización explícita
-del mantenedor. Reiniciar Git no autoriza borrar Supabase o R2.
+Structural decisions require an ADR. Permission, visibility, publication and
+infrastructure configuration changes require explicit maintainer authorization.
+Resetting Git does not authorize deleting Supabase or R2 data.
 
-Contribuciones externas requieren revisión del mantenedor. Nadie simula una
-aprobación independiente de su propio cambio. Mientras haya un único mantenedor,
-verificar CI y documentar revisión manual; añadir revisión independiente al
-incorporar otro mantenedor. Escritura solo para mantenedores autorizados.
+External contributions require maintainer review. Never represent self-review
+as independent approval. While there is only one maintainer, verify CI and
+record manual review; require independent review when a second maintainer joins.
+Only authorized maintainers receive write access.
 
-Las protecciones reales se verifican en GitHub; esta revisión no las cambia.
-Trato respetuoso y sin acoso ni discriminación. No publicar secretos, contenido
-externo ni información privada como parte de una contribución.
+`develop` is the default branch and receives work through PRs and checks.
+`main` receives stable promotions from `develop`, with test evidence for the
+integrated commit. Merging and deployment are never automatic. See the
+[Git workflow](docs/GIT-WORKFLOW.md) and [ADR 0002](docs/adr/0002-repository-governance.md).
+Verify actual branch protections and their enforcement for administrators in GitHub.
+
+Use English for repository content, including documentation, comments, issue and
+PR text, labels and project metadata. Localized catalog data and proper names
+retain their appropriate languages; they are not repository documentation.
+
+Treat others respectfully, without harassment or discrimination. Do not publish
+secrets, external content or private information as part of a contribution.

@@ -1,0 +1,9 @@
+{
+  "name": "@knowngdb/ui",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./account": "./src/account.tsx",
+    "./workspace.css": "./src/workspace.css"
+  }
+}
