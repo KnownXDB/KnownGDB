@@ -9,10 +9,11 @@ const stagedFiles = new Set(git('diff', '--cached', '--name-only', '--diff-filte
 const errors = [];
 const forbidden = /(^|\/)(node_modules|dist|build|coverage|artifacts|uploads|screenshots|videos|test-results|playwright-report|blob-report|backups|data|secrets|private|\.local|\.wrangler|\.netlify|\.cache|\.git)(\/|$)|(^|\/)\.env(?:\.|$)|(^|\/)\.dev\.vars(?:\.|$)|\.(?:pem|key|p12|pfx|jks|keystore|dump|backup|sqlite3?|db|har|log|zip|gz|exe|dll|png|jpe?g|ico|webp|mp4|webm)$/i;
 const utf8 = new TextDecoder('utf-8', { fatal: true });
+const privateOrLocal = /(^|\/)(?:\.aws|\.azure|\.ssh|\.gnupg|\.history|\.fleet|\.idea)(\/|$)|(^|\/)(?:\.envrc|\.npmrc|\.netrc|_netrc|\.git-credentials|\.htpasswd|id_rsa[^/]*|id_ed25519[^/]*|(?:credentials|service-account|storage-state|auth-state|session-state|cookies)[^/]*\.json)$|(^|\/)supabase\/(?:\.temp|\.branches|\.cache)(\/|$)|\.(?:tfvars(?:\.json)?|seed|stackdump|bak|orig|rej)$|(^|\/)(?:\.DS_Store|Thumbs\.db|Desktop\.ini|ehthumbs(?:_vista)?\.db)$/i;
 
 for (const file of files) {
   if (staged && !stagedFiles.has(file)) continue;
-  if ((forbidden.test(file) && !/(^|\/)\.env\.example$/.test(file)) || /(^|\/)\.gitleaks/.test(file)) {
+  if ((forbidden.test(file) && !/(^|\/)\.env\.example$/.test(file)) || privateOrLocal.test(file) || /(^|\/)\.gitleaks/.test(file)) {
     errors.push(`${file}: forbidden tracked path`);
     continue;
   }

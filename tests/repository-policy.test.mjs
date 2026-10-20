@@ -26,7 +26,7 @@ test('accepts linked UTF-8/LF source and rejects broken documentation links', ()
   assert.notEqual(fixture({ 'README.md': '[Rules](missing.md)\n' }).status, 0);
 });
 test('rejects generated paths and private environment files', () => {
-  for (const name of ['.env.local', 'build/output.js', 'test-results/output.txt', 'image.png', 'private/config.json']) {
+  for (const name of ['.env.local', 'build/output.js', 'test-results/output.txt', 'image.png', 'private/config.json', '.npmrc', '.netrc', '.aws/credentials', '.ssh/id_ed25519', 'cookies.json', 'session-state.json', 'supabase/.temp/project-ref', 'local.tfvars', 'Desktop.ini', '.history/source.ts', 'source.ts.bak']) {
     assert.notEqual(fixture({ [name]: 'unpublishable\n' }).status, 0, name);
   }
   assert.equal(fixture({ '.env.example': 'API_URL=\n' }).status, 0);
