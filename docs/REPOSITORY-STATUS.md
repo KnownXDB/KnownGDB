@@ -50,6 +50,11 @@ Storage follow-up: [read-only reconciliation](STORAGE-RECONCILIATION.md) verifie
 six registered R2 originals and one expired incomplete upload against independent
 body hashes. All seven are preserved; no hosted rows or objects were changed.
 
+Import follow-up: the guarded executor and eighth migration are verified locally
+with thirteen RLS tables, rollback/permission checks and immutable mapping records.
+The hosted schema/import remains unchanged; see the [runbook](LEGACY-IMPORT-RUNBOOK.md)
+for explicit application prerequisites and validation limits.
+
 Promotion acceptance requires successful CI and local checks on the exact
 integrated develop commit, then a separate reviewed develop-to-main PR. Public
 PRs and CI runs retain the final integration evidence; no self-review is described

@@ -35,7 +35,9 @@ process.on("SIGTERM", () => {
 const frontendEnv = Object.fromEntries(
   Object.entries(runtimeEnv).filter(
     ([key]) =>
-      !/SUPABASE|SECRET|TOKEN|PASSWORD|PRIVATE_KEY|ASSET_GATEWAY/i.test(key),
+      !/SUPABASE|SECRET|TOKEN|PASSWORD|PRIVATE_KEY|ASSET_GATEWAY|R2_|AWS_/i.test(
+        key,
+      ),
   ),
 );
 run(

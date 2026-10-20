@@ -1,11 +1,12 @@
 # ADR 0008: Plan the legacy history backfill
 
-Date: 2026-10-20. Status: planning implemented and locally verified; remote application pending.
+Date: 2026-10-20. Status: planner, executor and registry locally verified; remote application pending.
 
 ## Decision
 
 Prepare a deterministic, offline plan from verified inventories. This phase has
-no apply mode, network calls, remote SQL or object writes. Keep the actual plan
+no apply mode, network calls, remote SQL or object writes. The separate executor
+requires an explicit apply flag and matching target identifiers. Keep the actual plan
 and complete source snapshots in ignored `.local/`, outside public source.
 
 Scope this first backfill to registered, approved/published official originals
@@ -32,10 +33,10 @@ created without overwriting any destination and independently read/hash-verified
 before a future application step can set storage verification. Publication is
 an explicit subsequent operation; planning does not change existing publication.
 
-## Required application work
+## Application contract
 
-The planner is not a migration executor. Before remote application, implement and
-review a durable legacy/version mapping with foreign keys, import actor/time,
+The planner is not a migration executor. The new registry migration provides a
+durable legacy/version mapping with foreign keys, import actor/time,
 full source snapshot and copy-verification evidence. Preserve legacy fields not
 currently represented in versions, including confidence, MIME type and dimensions.
 Do not weaken existing triggers or delete the legacy records to simplify import.
@@ -58,4 +59,9 @@ incomplete object. Unit checks reject corrupt evidence, missing attribution,
 insufficient permissions/rights, changed language tags and target conflicts.
 Disposable PostgreSQL accepts the actual planner-generated collection/version
 records, preserves the source row and rejects publishing without verified storage.
-These checks do not perform remote copies, persist mappings or test an executor.
+The executor additionally checks source/destination corruption, competing writes
+and interrupted registration. Native PostgreSQL verifies transactional rollback,
+locked snapshot comparisons, permissions and registry immutability. An SDK HTTP
+fixture verifies the conditional PUT header and independent GET. These checks do
+not perform hosted copies or apply remote migrations. See the
+[execution runbook](../LEGACY-IMPORT-RUNBOOK.md).

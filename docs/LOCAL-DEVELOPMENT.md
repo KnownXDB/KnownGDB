@@ -92,7 +92,7 @@ profiles, publication identities and a guarded Super Admin designation. The
 existing game, six legacy asset rows and all R2 originals were preserved.
 
 See [migration scope](../supabase/README.md) before isolated database work. All
-seven migrations replay in disposable PostgreSQL with `npm run db:test`.
+migrations replay in disposable PostgreSQL with `npm run db:test`.
 The full local Supabase stack requires a running Docker-compatible engine:
 
 1. Run `npm run db:start` to start PostgreSQL, Auth, REST, Studio and local mail.

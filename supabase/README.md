@@ -25,7 +25,7 @@ files stay outside Git and are removed after shutdown. The runner never loads
 Reviewed native-library symlinks are restored only inside the dependency folder;
 installation retains `npm ci --ignore-scripts`.
 
-Tests replay all seven migrations and check twelve RLS tables, SQLSTATE 42501
+Tests replay all eight migrations and check thirteen RLS tables, SQLSTATE 42501
 for browser roles and service access. Administrator guards cover empty, existing
 and ambiguous inventories. Asset-history checks roll back. Minimal Auth tables satisfy
 foreign-key and trigger dependencies; this is not a full GoTrue/PostgREST test.
@@ -33,6 +33,11 @@ The native engine is PostgreSQL 17.10; the inspected hosted engine is 17.11.
 No hosted engine version changes. Full-stack acceptance uses Supabase's PG17 image.
 
 ## Full local Supabase stack
+
+The eighth migration adds the locally verified legacy import registry and guarded
+transactional RPC. It has not been applied to the hosted project, which still has
+the seven earlier migration records. See the [import runbook](../docs/LEGACY-IMPORT-RUNBOOK.md)
+before any schema application or storage writes.
 
 Install a supported Docker-compatible runtime, then run `npm run db:start`.
 `config.toml` defines an independent local project with PostgreSQL 17, explicit
