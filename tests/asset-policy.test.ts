@@ -26,6 +26,19 @@ test("object keys bind canonical game, origin, language, UTC chronology and uniq
   );
   assert.throws(() => objectKey({ ...input, gameId: "../other-game" }));
   assert.throws(() => objectKey({ ...input, extension: "../exe" }));
+  assert.throws(() => objectKey({ ...input, extension: "ico" }));
+  assert.throws(() => objectKey({ ...input, extension: "mp4" }));
+  assert.throws(() => objectKey({ ...input, role: "trailer" }));
+  assert.ok(
+    objectKey({ ...input, role: "client_icon", extension: "ico" }).endsWith(
+      "original.ico",
+    ),
+  );
+  assert.ok(
+    objectKey({ ...input, role: "trailer", extension: "webm" }).endsWith(
+      "original.webm",
+    ),
+  );
 });
 test("language scope distinguishes Global, localized and multilingual content", () => {
   assert.equal(languageScope("global", []), "global");

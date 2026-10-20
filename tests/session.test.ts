@@ -82,6 +82,7 @@ test("cookies are authenticated, encrypted, host-only and bounded by absolute ex
 test("cookie sessions restore, refresh, enforce CSRF and clear on sign-out", async () => {
   let refreshCount = 0;
   let identityChecks = 0;
+  let unavailableIdentity = false;
   let logoutCount = 0;
   let rejectRefresh = false;
   const server = createServer(async (req, res) => {
@@ -107,6 +108,11 @@ test("cookie sessions restore, refresh, enforce CSRF and clear on sign-out", asy
     }
     if (req.url === "/auth/v1/user") {
       identityChecks++;
+      if (unavailableIdentity) {
+        res.statusCode = 503;
+        res.end(JSON.stringify({ message: "Temporarily unavailable" }));
+        return;
+      }
       res.end(JSON.stringify(user));
       return;
     }
@@ -167,6 +173,14 @@ test("cookie sessions restore, refresh, enforce CSRF and clear on sign-out", asy
       role: "super_admin",
     });
     assert.equal(refreshCount, 0);
+    unavailableIdentity = true;
+    const temporary = await handleRequest(
+      new Request(url + "session", { headers: { cookie } }),
+      env,
+    );
+    assert.equal(temporary.status, 503);
+    assert.equal(temporary.headers.has("set-cookie"), false);
+    unavailableIdentity = false;
     assert.equal(
       (
         await handleRequest(

@@ -47,6 +47,10 @@ export function objectKey(input: {
     throw new Error("Invalid asset classification.");
   if (!["png", "jpg", "ico", "mp4", "webm"].includes(input.extension))
     throw new Error("Unsupported storage extension.");
+  if (input.extension === "ico" && input.role !== "client_icon")
+    throw new Error("ICO requires the client_icon role.");
+  if (["mp4", "webm"].includes(input.extension) !== (input.role === "trailer"))
+    throw new Error("File extension and media role disagree.");
   const date = new Date(input.createdAt);
   if (!Number.isFinite(date.getTime()))
     throw new Error("Invalid creation time.");

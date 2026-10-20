@@ -76,6 +76,14 @@ async function routeRequest(
         data: { user },
         error,
       } = await client.auth.getUser(token);
+      if (
+        error &&
+        (!error.status || error.status >= 500 || error.status === 429)
+      )
+        return reply(
+          { error: "Identity verification is temporarily unavailable." },
+          503,
+        );
       if (error || !user)
         return reply({ error: "Authentication required." }, 401);
       const membership = await client
