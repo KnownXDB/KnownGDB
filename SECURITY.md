@@ -46,7 +46,10 @@ Platform secret scanning and push protection complement review; none guarantees
 that every secret is detected. Authentication, authorization and deployment are
 not fully implemented for production. Email/password sign-in and contributor
 profile editing use server-side identity checks and encrypted HttpOnly session cookies.
-There are no administrative publication write endpoints. See
+Version publication requires verified Super Admin membership, an active session,
+same-origin cookie writes, an expected state and an audit reason. The service-only
+transaction rechecks permission and eligibility; browser roles cannot invoke it.
+See [publication boundaries](docs/adr/0009-explicit-version-publication.md) and
 [persistent sessions](docs/adr/0006-persistent-account-sessions.md) for token revocation,
 MFA and hosted abuse-control limitations. The additive asset-history
 migration was transaction-tested and preserves the existing catalog; hosted upload

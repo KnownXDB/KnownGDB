@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import type { GameSummary, Health } from "@knowngdb/contracts";
 import "@knowngdb/ui/workspace.css";
 import { Account } from "@knowngdb/ui/account";
+import { PublishedVersions } from "./versions.tsx";
 
 function App() {
   const [health, setHealth] = useState<Health | null>(null);
@@ -10,6 +11,7 @@ function App() {
   const [games, setGames] = useState<GameSummary[] | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [selectedGame, setSelectedGame] = useState<string | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/v1/health", { signal: controller.signal })
@@ -35,6 +37,7 @@ function App() {
       const body = await response.json();
       if (!response.ok) throw new Error(body.error);
       setGames(body.games);
+      setSelectedGame(null);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Catalog unavailable.");
       setGames(null);
@@ -83,6 +86,28 @@ function App() {
                       <small>
                         {game.language} · <code>{game.id}</code>
                       </small>
+                      <div>
+                        <button
+                          onClick={() =>
+                            setSelectedGame(
+                              selectedGame === `${game.id}:${game.language}`
+                                ? null
+                                : `${game.id}:${game.language}`,
+                            )
+                          }
+                          aria-expanded={
+                            selectedGame === `${game.id}:${game.language}`
+                          }
+                        >
+                          View published versions
+                        </button>
+                      </div>
+                      {selectedGame === `${game.id}:${game.language}` ? (
+                        <PublishedVersions
+                          gameId={game.id}
+                          title={game.title}
+                        />
+                      ) : null}
                     </li>
                   ))}
                 </ul>
@@ -99,8 +124,8 @@ function App() {
             : "Connecting to the API…"}
         </p>
         <p>
-          This is the executable foundation. Asset browsing, submission and
-          publication screens are not implemented in this workspace yet.
+          Published version metadata is available from each game. Asset
+          previews, downloads and submission workflows are not implemented yet.
         </p>
       </main>
     </>

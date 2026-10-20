@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import type { Health } from "@knowngdb/contracts";
+import type { Health, AdminRole } from "@knowngdb/contracts";
 import "@knowngdb/ui/workspace.css";
 import { Account } from "@knowngdb/ui/account";
+import { VersionAdministration } from "./versions.tsx";
 
 function App() {
   const [health, setHealth] = useState<Health | null>(null);
   const [error, setError] = useState("");
+  const [role, setRole] = useState<AdminRole | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/v1/health", { signal: controller.signal })
@@ -28,7 +30,7 @@ function App() {
         <span>Administration workspace</span>
       </header>
       <main>
-        <Account admin />
+        <Account admin onRoleChange={setRole} />
         <h1>Catalog operations.</h1>
         <p>
           The administration application has its own entry point and build.
@@ -53,7 +55,13 @@ function App() {
           Publishing a new cover or logo must preserve earlier originals and
           their history.
         </p>
-        <p>Moderation and publication forms are not implemented yet.</p>
+        {role ? (
+          <VersionAdministration role={role} />
+        ) : (
+          <p>
+            Sign in with administrative permission to review asset versions.
+          </p>
+        )}
       </main>
     </>
   );

@@ -33,8 +33,8 @@ This is not production certification or hosted deployment acceptance.
 - CI remains verification-only. No deployment, release, additional migration,
   R2 object change or remote Auth configuration change accompanies integration.
 
-The current roadmap distinguishes completed foundations/backfill from pending
-version publication/read integration, authenticated ingestion/moderation and
+The current roadmap distinguishes completed foundations/backfill and version
+publication/metadata reads from pending authenticated ingestion/moderation and
 premium product interfaces. Hosted runtime validation, MFA and stronger revocation
 controls remain prerequisites for production administration. See
 [session boundaries](adr/0006-persistent-account-sessions.md).
@@ -56,6 +56,14 @@ Authorized hosted execution also passed independent acceptance: six private
 versions/mappings and six copies, with all seven original objects and legacy
 assets/upload intents unchanged. The eighth migration's digest matches its
 ledger entry. See the [runbook](LEGACY-IMPORT-RUNBOOK.md) for evidence and limits.
+
+Publication follow-up: metadata history and explicit Super Admin publication and
+withdrawal pass 30 repository/API/domain tests, nine-migration SQL replay and both
+frontend builds. The hosted ninth migration matches its source digest; browser
+roles cannot execute its function, and six versions remain private. Desktop and
+mobile browser checks use controlled administrative responses; the real public
+history is empty as expected. No real hosted publication or binary delivery was
+tested. See [ADR 0009](adr/0009-explicit-version-publication.md).
 
 Promotion acceptance requires successful CI and local checks on the exact
 integrated develop commit, then a separate reviewed develop-to-main PR. Public

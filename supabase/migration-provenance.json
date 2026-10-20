@@ -38,6 +38,11 @@
       "version": "20261020210124",
       "name": "legacy_asset_import_registry",
       "sha256": "8c1f39a8c02387f25cdf1c8d6d7c46a9cb9432cc95c1edbf2e7f6182aee503f3"
+    },
+    {
+      "version": "20261020212708",
+      "name": "explicit_asset_version_publication",
+      "sha256": "868c63f15808e279b0d009c68d5eb422dc0b754497fa1c4af25e9378ae6a7463"
     }
   ],
   "adaptation": {

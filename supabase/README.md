@@ -25,7 +25,7 @@ files stay outside Git and are removed after shutdown. The runner never loads
 Reviewed native-library symlinks are restored only inside the dependency folder;
 installation retains `npm ci --ignore-scripts`.
 
-Tests replay all eight migrations and check thirteen RLS tables, SQLSTATE 42501
+Tests replay all nine migrations and check thirteen RLS tables, SQLSTATE 42501
 for browser roles and service access. Administrator guards cover empty, existing
 and ambiguous inventories. Asset-history checks roll back. Minimal Auth tables satisfy
 foreign-key and trigger dependencies; this is not a full GoTrue/PostgREST test.
@@ -33,6 +33,12 @@ The native engine is PostgreSQL 17.10; the inspected hosted engine is 17.11.
 No hosted engine version changes. Full-stack acceptance uses Supabase's PG17 image.
 
 ## Full local Supabase stack
+
+The ninth migration adds indexed version pagination and a service-only publication
+transaction. Tests cover permission, session expiry, eligibility, conflicts and
+audited publication/withdrawal. See [ADR 0009](../docs/adr/0009-explicit-version-publication.md).
+Its applied version is `20261020212708`; the normalized source digest matches the
+hosted ledger. All six imported versions remain private after schema application.
 
 The eighth migration adds the locally verified legacy import registry and guarded
 transactional RPC. It is recorded as `20261020210124` in the hosted project after

@@ -29,7 +29,7 @@ verified; unchecked items remain planned. This is not a production-ready MVP.
 
 - [x] Inspect existing Supabase schema, migrations, Auth, RLS and permissions.
 - [x] Recover the six earlier schema migrations and verify their provenance.
-- [x] Replay all seven migrations and verify guards/RLS in disposable PostgreSQL.
+- [x] Replay all nine migrations and verify guards/RLS in disposable PostgreSQL.
 - [x] Configure private local API access to the existing Supabase catalog.
 - [x] Complete isolated database startup using the official CLI and reviewed baseline.
 - [x] Shared local TypeScript API and Netlify Functions testing adapter.
@@ -42,8 +42,10 @@ verified; unchecked items remain planned. This is not a production-ready MVP.
   The offline six-version plan, guarded copy executor and immutable import registry
   are verified locally and against the hosted services: six private versions and
   mappings, six verified copies, all seven original objects and legacy rows preserved.
-- [ ] Integrate reviewed version reads and explicit publication into the API/admin
+- [x] Integrate reviewed version reads and explicit publication into the API/admin
   without changing the preserved legacy publication history.
+  Public metadata history and Super Admin publication/withdrawal are verified;
+  originals remain private in R2, and preview/download delivery remains pending.
 - [ ] Reuse the existing Netlify testing project; verify explicitly deployed web,
   admin and API URLs without enabling automatic repository builds.
 - [x] Document private runtime variables and storage permission boundaries.
