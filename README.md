@@ -68,6 +68,7 @@ consumers, distribution channels and external identifiers.
 
 ## Documentation
 
+- [External Netlify testing](docs/NETLIFY-TESTING.md)
 - [Roadmap](ROADMAP.md)
 - [Architecture](docs/architecture/overview.md)
 - [Local workflow](docs/LOCAL-DEVELOPMENT.md)

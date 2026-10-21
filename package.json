@@ -44,6 +44,7 @@
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
     "embedded-postgres": "17.10.0-beta.17",
+    "esbuild": "0.28.2",
     "prettier": "3.9.10",
     "supabase": "2.121.0",
     "tailwindcss": "4.3.3",
