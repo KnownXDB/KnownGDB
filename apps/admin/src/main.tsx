@@ -40,7 +40,7 @@ function App() {
         <p role={error ? "alert" : undefined}>
           {error ||
             (health
-              ? "Local API connected. Administrative permission is verified when you sign in."
+              ? "API connected. Administrative permission is verified when you sign in."
               : "Connecting to the API…")}
         </p>
         <h2>Publication identity</h2>

@@ -1,6 +1,10 @@
 # ADR 0003: Netlify testing and media boundaries
 
-Date: 2026-10-19. Status: accepted; local adapter implemented, hosted acceptance pending.
+Date: 2026-10-19. Status: implemented; hosted read/browser acceptance verified on 2026-10-20.
+
+The existing testing URL now serves web, admin and the shared API through an
+explicit manual deployment. See [deployment acceptance and remaining Auth limits](../NETLIFY-TESTING.md).
+The initial audit observations below describe the configuration before that deployment.
 
 ## Context
 
