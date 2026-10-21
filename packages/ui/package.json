@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./asset-file": "./src/asset-file.tsx",
     "./account": "./src/account.tsx",
     "./workspace.css": "./src/workspace.css"
   }

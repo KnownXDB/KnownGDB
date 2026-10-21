@@ -1,3 +1,5 @@
+import { verifyAdmin } from "./admin-access.ts";
+import { readJsonObject } from "./request-body.ts";
 import { createClient } from "@supabase/supabase-js";
 import type { ApiEnvironment } from "./handler.ts";
 import type { VersionSummary } from "@knowngdb/contracts";
@@ -42,79 +44,17 @@ export async function versionRequest(
     let sessionId: string | undefined;
     let superAdmin = false;
     if (admin) {
-      const token = request.headers
-        .get("authorization")
-        ?.match(/^Bearer (\S+)$/)?.[1];
-      if (!token) return reply({ error: "Authentication required." }, 401);
-      const verified = await client.auth.getUser(token);
-      if (
-        verified.error &&
-        (!verified.error.status ||
-          verified.error.status >= 500 ||
-          verified.error.status === 429)
-      )
-        return reply(
-          { error: "Identity verification is temporarily unavailable." },
-          503,
-        );
-      if (verified.error || !verified.data.user?.email_confirmed_at)
-        return reply({ error: "Authentication required." }, 401);
-      actor = verified.data.user.id;
-      const membership = await client
-        .schema("catalog")
-        .from("admin_members")
-        .select("role")
-        .eq("user_id", actor)
-        .eq("active", true)
-        .maybeSingle();
-      if (membership.error)
-        return reply(
-          { error: "Administrative authorization is unavailable." },
-          503,
-        );
-      if (!["super_admin", "moderator"].includes(membership.data?.role))
-        return reply({ error: "Administrative permission required." }, 403);
-      superAdmin = membership.data?.role === "super_admin";
-      try {
-        sessionId = JSON.parse(
-          Buffer.from(token.split(".")[1], "base64url").toString("utf8"),
-        ).session_id;
-      } catch {
-        /* Reject tokens without a verified session claim. */
-      }
-      if (!sessionId || !uuid.test(sessionId))
-        return reply({ error: "An active session is required." }, 401);
-      const activeSession = await client.rpc("admin_check", {
-        p_actor: actor,
-        p_session: sessionId,
-      });
-      if (activeSession.error)
-        return reply(
-          { error: "Session verification is temporarily unavailable." },
-          503,
-        );
-      if (activeSession.data !== true)
-        return reply(
-          { error: "An active administrative session is required." },
-          401,
-        );
+      const access = await verifyAdmin(client, request);
+      if (access instanceof Response) return access;
+      ({ actor, sessionId, superAdmin } = access);
       if (write && !superAdmin)
         return reply({ error: "Super Admin permission required." }, 403);
     }
     if (write) {
       if (url.search)
         return reply({ error: "Unexpected publication parameters." }, 400);
-      if (!request.headers.get("content-type")?.startsWith("application/json"))
-        return reply({ error: "JSON body required." }, 415);
-      const raw = await request.text();
-      if (new TextEncoder().encode(raw).length > 4096)
-        return reply({ error: "Request is too large." }, 413);
-      let body;
-      try {
-        body = JSON.parse(raw);
-      } catch {
-        return reply({ error: "Invalid JSON." }, 400);
-      }
+      const body = await readJsonObject(request);
+      if (body instanceof Response) return body;
       if (
         !body ||
         Array.isArray(body) ||
@@ -123,7 +63,9 @@ export async function versionRequest(
           (key) =>
             !["expectedStatus", "publicationStatus", "reason"].includes(key),
         ) ||
+        typeof body.expectedStatus !== "string" ||
         !["private", "published"].includes(body.expectedStatus) ||
+        typeof body.publicationStatus !== "string" ||
         !["private", "published"].includes(body.publicationStatus) ||
         typeof body.reason !== "string" ||
         !body.reason.trim() ||

@@ -111,6 +111,39 @@ async function fixture() {
 const publicUrl = `http://localhost/api/v1/games/${game}/asset-versions`;
 const adminUrl = "http://localhost/api/v1/admin/asset-versions";
 const writeUrl = `${adminUrl}/${version}/publication`;
+test("publication rejects oversized streaming input before consuming the full body", async () => {
+  const f = await fixture();
+  let chunks = 0;
+  let cancelled = false;
+  try {
+    const body = new ReadableStream<Uint8Array>(
+      {
+        pull(controller) {
+          chunks++;
+          if (chunks > 100) controller.close();
+          else controller.enqueue(new Uint8Array(1024));
+        },
+        cancel() {
+          cancelled = true;
+        },
+      },
+      { highWaterMark: 0 },
+    );
+    const init: RequestInit & { duplex: "half" } = {
+      method: "POST",
+      headers: { authorization, "Content-Type": "application/json" },
+      body,
+      duplex: "half",
+    };
+    const response = await handleRequest(new Request(writeUrl, init), f.env);
+    assert.equal(response.status, 413);
+    assert.ok(chunks <= 5);
+    assert.equal(cancelled, true);
+    assert.equal(f.state.writes.length, 0);
+  } finally {
+    await f.close();
+  }
+});
 const write = (body: unknown, origin = "http://localhost") =>
   new Request(writeUrl, {
     method: "POST",

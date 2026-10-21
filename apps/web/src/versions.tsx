@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { AssetFile } from "@knowngdb/ui/asset-file";
 import type { VersionSummary, VersionPage } from "@knowngdb/contracts";
 
 export function PublishedVersions({
@@ -71,6 +72,11 @@ export function PublishedVersions({
                 {new Date(version.createdAt).toLocaleDateString()}
               </time>
             </small>
+            <AssetFile
+              versionId={version.id}
+              label={version.role.replaceAll("_", " ")}
+              available={version.storageVerified && version.role !== "trailer"}
+            />
           </li>
         ))}
       </ul>

@@ -122,3 +122,17 @@ Never reset or replay migrations against the existing remote project. R2 invento
 and the six-version private backfill are [verified](LEGACY-IMPORT-RUNBOOK.md);
 general upload/moderation workflows remain separate work. No cloud data is needed to edit
 or build the frontends or run the local API policy tests.
+
+## Original image delivery
+
+For local previews/downloads, use the server-only `R2_ACCOUNT_ID`, `R2_BUCKET`,
+`R2_READ_ACCESS_KEY_ID` and `R2_READ_SECRET_ACCESS_KEY` variables in ignored `.env`.
+Create separate Object Read only credentials restricted to this bucket. Keep
+operator import credentials separate; never copy any private key into frontend
+configuration. Restart only the API after environment changes.
+
+Signed-in administrators can inspect a private verified version using Show preview
+and Download original. Public routes serve only eligible published versions.
+PNG/JPEG/ICO files are limited to 16 MiB, with size/type/hash verification before
+delivery. See [ADR 0010](adr/0010-verified-original-image-delivery.md) for range,
+cache and hosting limits. No hosted deployment is implied by local changes.

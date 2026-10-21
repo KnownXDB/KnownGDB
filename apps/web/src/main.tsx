@@ -124,8 +124,8 @@ function App() {
             : "Connecting to the API…"}
         </p>
         <p>
-          Published version metadata is available from each game. Asset
-          previews, downloads and submission workflows are not implemented yet.
+          Published versions include image previews and original downloads.
+          Submission workflows and video delivery are not implemented yet.
         </p>
       </main>
     </>

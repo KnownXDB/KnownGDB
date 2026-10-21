@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { ApiEnvironment } from "./handler.ts";
 import { issueSession, clearSession } from "./session.ts";
+import { isJsonRequest, readJsonObject } from "./request-body.ts";
 
 export const accountPaths = [
   "/api/v1/account/login",
@@ -35,7 +36,7 @@ export async function accountRequest(
     const origin = request.headers.get("origin");
     if (origin && origin !== new URL(request.url).origin)
       return reply({ error: "Cross-origin request rejected." }, 403);
-    if (!request.headers.get("content-type")?.startsWith("application/json"))
+    if (!isJsonRequest(request))
       return reply({ error: "JSON body required." }, 415);
   }
   if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY)
@@ -43,16 +44,9 @@ export async function accountRequest(
   try {
     let body: Record<string, unknown> = {};
     if (request.method !== "GET") {
-      const text = await request.text();
-      if (new TextEncoder().encode(text).length > 4096)
-        return reply({ error: "Request is too large." }, 413);
-      try {
-        body = JSON.parse(text);
-      } catch {
-        return reply({ error: "Invalid JSON." }, 400);
-      }
-      if (!body || Array.isArray(body) || typeof body !== "object")
-        return reply({ error: "Invalid body." }, 400);
+      const parsed = await readJsonObject(request);
+      if (parsed instanceof Response) return parsed;
+      body = parsed;
     }
     const client = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
       auth: {
