@@ -15,6 +15,7 @@ let initialRecovery =
 const recoveryError = fragment.has("error") || fragment.has("error_code");
 if (
   fragment.has("access_token") ||
+  fragment.has("refresh_token") ||
   fragment.has("error") ||
   fragment.has("error_code")
 )
