@@ -45,7 +45,9 @@ verified; unchecked items remain planned. This is not a production-ready MVP.
 - [x] Integrate reviewed version reads and explicit publication into the API/admin
   without changing the preserved legacy publication history.
   Public metadata history and Super Admin publication/withdrawal are verified;
-  originals remain private in R2, and preview/download delivery remains pending.
+  originals remain private in R2. Local image previews/downloads are implemented
+  with read-only credentials and integrity checks; hosted delivery and video
+  transport remain pending. See [delivery scope](docs/adr/0010-verified-original-image-delivery.md).
 - [x] Reuse the existing Netlify testing project; verify explicitly deployed web,
   admin and API URLs without enabling automatic repository builds.
   Real catalog reads, anonymous authorization/CSRF rejection and desktop/mobile

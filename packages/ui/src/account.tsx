@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Recovery, startsInRecovery } from "./recovery.tsx";
 import type { AdminRole } from "@knowngdb/contracts";
 
@@ -17,6 +17,8 @@ export function Account({
   const [busy, setBusy] = useState(false);
   const [role, setRole] = useState("");
   const [recovering, setRecovering] = useState(startsInRecovery);
+  const sessionRevision = useRef(0);
+  const sessionOperation = useRef(false);
   useEffect(() => {
     if (!restoring)
       onRoleChange?.(
@@ -32,11 +34,13 @@ export function Account({
     }
     let active = true;
     async function restore(loadProfile = false) {
+      if (sessionOperation.current) return;
+      const revision = sessionRevision.current;
       try {
         const response = await fetch("/api/v1/account/session", {
           credentials: "same-origin",
         });
-        if (!active) return;
+        if (!active || revision !== sessionRevision.current) return;
         if (response.status === 401) {
           setSignedIn(false);
           setRole("");
@@ -46,19 +50,19 @@ export function Account({
         if (!response.ok)
           throw Error("Session verification is temporarily unavailable.");
         const session = await response.json();
-        if (!active) return;
+        if (!active || revision !== sessionRevision.current) return;
         if (loadProfile) setName(session.profile?.displayName ?? "");
         setSignedIn(true);
         setRole(admin ? (session.role ?? "") : "");
       } catch (error) {
-        if (active)
+        if (active && revision === sessionRevision.current)
           setMessage(
             error instanceof Error
               ? error.message
               : "Session verification failed.",
           );
       } finally {
-        if (active) setRestoring(false);
+        if (active && revision === sessionRevision.current) setRestoring(false);
       }
     }
     void restore(true);
@@ -106,6 +110,8 @@ export function Account({
   }
   async function authenticate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    sessionRevision.current++;
+    sessionOperation.current = true;
     const form = event.currentTarget;
     const data = new FormData(form);
     const signup =
@@ -137,6 +143,8 @@ export function Account({
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Sign-in failed.");
     } finally {
+      sessionRevision.current++;
+      sessionOperation.current = false;
       setBusy(false);
     }
   }
@@ -159,6 +167,8 @@ export function Account({
     }
   }
   async function logout() {
+    sessionRevision.current++;
+    sessionOperation.current = true;
     setBusy(true);
     try {
       await call("account/logout", "POST", {});
@@ -168,12 +178,16 @@ export function Account({
         "Sign-out could not be confirmed. Please retry before leaving a shared device.",
       );
       setBusy(false);
+      sessionRevision.current++;
+      sessionOperation.current = false;
       return;
     }
     setSignedIn(false);
     setName("");
     setRole("");
     setBusy(false);
+    sessionRevision.current++;
+    sessionOperation.current = false;
     announceSession();
   }
   if (recovering)
