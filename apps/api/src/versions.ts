@@ -1,4 +1,5 @@
 import { verifyAdmin } from "./admin-access.ts";
+import { readJsonObject } from "./request-body.ts";
 import { createClient } from "@supabase/supabase-js";
 import type { ApiEnvironment } from "./handler.ts";
 import type { VersionSummary } from "@knowngdb/contracts";
@@ -52,17 +53,8 @@ export async function versionRequest(
     if (write) {
       if (url.search)
         return reply({ error: "Unexpected publication parameters." }, 400);
-      if (!request.headers.get("content-type")?.startsWith("application/json"))
-        return reply({ error: "JSON body required." }, 415);
-      const raw = await request.text();
-      if (new TextEncoder().encode(raw).length > 4096)
-        return reply({ error: "Request is too large." }, 413);
-      let body;
-      try {
-        body = JSON.parse(raw);
-      } catch {
-        return reply({ error: "Invalid JSON." }, 400);
-      }
+      const body = await readJsonObject(request);
+      if (body instanceof Response) return body;
       if (
         !body ||
         Array.isArray(body) ||
@@ -71,7 +63,9 @@ export async function versionRequest(
           (key) =>
             !["expectedStatus", "publicationStatus", "reason"].includes(key),
         ) ||
+        typeof body.expectedStatus !== "string" ||
         !["private", "published"].includes(body.expectedStatus) ||
+        typeof body.publicationStatus !== "string" ||
         !["private", "published"].includes(body.publicationStatus) ||
         typeof body.reason !== "string" ||
         !body.reason.trim() ||
