@@ -4,12 +4,17 @@ import { creditOptions } from "./asset-policy.ts";
 import { accountPaths, accountRequest } from "./account.ts";
 import { withSession } from "./session.ts";
 import { isVersionRoute, versionRequest } from "./versions.ts";
+import { isDeliveryRoute, deliveryRequest } from "./asset-delivery.ts";
 
 export interface ApiEnvironment {
   SUPABASE_URL?: string;
   SUPABASE_SECRET_KEY?: string;
   ACCOUNT_RECOVERY_URL?: string;
   SESSION_SECRET?: string;
+  R2_ACCOUNT_ID?: string;
+  R2_BUCKET?: string;
+  R2_READ_ACCESS_KEY_ID?: string;
+  R2_READ_SECRET_ACCESS_KEY?: string;
 }
 const reply = (body: unknown, status = 200) =>
   Response.json(body, {
@@ -38,7 +43,8 @@ export async function handleRequest(
       "/api/v1/account/logout",
       "/api/v1/admin/session",
     ].includes(path) ||
-    (isVersionRoute(path) && path.startsWith("/api/v1/admin/"))
+    ((isVersionRoute(path) || isDeliveryRoute(path)) &&
+      path.startsWith("/api/v1/admin/"))
   )
     return withSession(request, env, (authenticated) =>
       routeRequest(authenticated, env),
@@ -50,6 +56,7 @@ async function routeRequest(
   env: ApiEnvironment,
 ): Promise<Response> {
   const url = new URL(request.url);
+  if (isDeliveryRoute(url.pathname)) return deliveryRequest(request, env);
   if (isVersionRoute(url.pathname)) return versionRequest(request, env);
   if (accountPaths.includes(url.pathname)) return accountRequest(request, env);
   if (request.method !== "GET")

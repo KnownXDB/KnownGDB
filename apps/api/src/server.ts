@@ -1,4 +1,7 @@
 import { createServer } from "node:http";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
+import type { ReadableStream as NodeReadableStream } from "node:stream/web";
 import { handleRequest } from "./handler.ts";
 
 const port = Number(process.env.API_PORT ?? 8787);
@@ -36,8 +39,17 @@ const server = createServer(async (incoming, outgoing) => {
     });
     const response = await handleRequest(request);
     outgoing.writeHead(response.status, Object.fromEntries(response.headers));
-    outgoing.end(Buffer.from(await response.arrayBuffer()));
+    if (response.body)
+      await pipeline(
+        Readable.fromWeb(response.body as NodeReadableStream<Uint8Array>),
+        outgoing,
+      );
+    else outgoing.end();
   } catch {
+    if (outgoing.headersSent) {
+      outgoing.destroy();
+      return;
+    }
     outgoing.writeHead(500);
     outgoing.end("Service unavailable.");
   }

@@ -94,7 +94,7 @@ export async function withSession(
     request.headers.get("sec-fetch-site") === "cross-site" ||
     (origin && origin !== new URL(request.url).origin) ||
     (matches.length &&
-      request.method !== "GET" &&
+      !["GET", "HEAD"].includes(request.method) &&
       origin !== new URL(request.url).origin)
   )
     return failure("Cross-origin request rejected.", 403);
