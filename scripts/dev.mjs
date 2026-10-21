@@ -7,7 +7,11 @@ if (local && !fs.existsSync(".local/supabase.env"))
 const runtimeEnv = { ...process.env, ...(local ? { API_PORT: "8788" } : {}) };
 if (local)
   for (const key of Object.keys(runtimeEnv))
-    if (/SUPABASE|SESSION_SECRET|ACCOUNT_RECOVERY_URL/.test(key))
+    if (
+      /SUPABASE|SESSION_SECRET|ACCOUNT_RECOVERY_URL|R2_|AWS_|ASSET_GATEWAY|ASSET_SIGNING/.test(
+        key,
+      )
+    )
       delete runtimeEnv[key];
 const children = [];
 const run = (script, args, env) => {
