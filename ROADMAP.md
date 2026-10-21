@@ -49,8 +49,9 @@ verified; unchecked items remain planned. This is not a production-ready MVP.
 - [x] Reuse the existing Netlify testing project; verify explicitly deployed web,
   admin and API URLs without enabling automatic repository builds.
   Real catalog reads, anonymous authorization/CSRF rejection and desktop/mobile
-  browser checks pass. Hosted administrator sign-in/persistence and complete email
-  recovery remain user acceptance steps; see [testing limits](docs/NETLIFY-TESTING.md).
+  browser checks pass. The maintainer confirmed hosted Super Admin sign-in,
+  reload persistence and history loading. Complete hosted email recovery remains
+  unverified; see [testing limits](docs/NETLIFY-TESTING.md).
 - [x] Document private runtime variables and storage permission boundaries.
 - Acceptance: real API reads with verified permissions; negative authorization
   tests; no privileged credentials in frontend bundles.

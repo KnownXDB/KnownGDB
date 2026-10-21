@@ -96,6 +96,8 @@ were expected anonymous account/admin session probes across the two viewports.
 Browser plugin was unavailable. No API mocks or synthetic hosted accounts were
 used; no recovery email was sent and no asset was published.
 
-The maintainer confirmed the recovery redirect allowlist. Hosted administrator
-sign-in, reload persistence and the complete recovery email flow remain unverified.
+The maintainer confirmed the recovery redirect allowlist and real hosted
+administrator sign-in, reload persistence, `super_admin` role and history loading.
+This is maintainer acceptance, not automated access to the account or session.
+The complete hosted recovery email flow remains unverified.
 The existing local web/admin/API environment continues running unchanged.
