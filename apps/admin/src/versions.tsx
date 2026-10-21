@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { AssetFile } from "@knowngdb/ui/asset-file";
 import type {
   AdminRole,
   VersionPage,
@@ -183,6 +184,14 @@ export function VersionAdministration({ role }: { role: AdminRole }) {
                   <dd>{version.context}</dd>
                 </div>
               </dl>
+              <AssetFile
+                versionId={version.id}
+                label={version.role.replaceAll("_", " ")}
+                admin
+                available={
+                  version.storageVerified && version.role !== "trailer"
+                }
+              />
               {version.changeReason ? (
                 <p className="version-reason">
                   Last recorded reason: {version.changeReason}

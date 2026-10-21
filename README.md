@@ -12,6 +12,9 @@ provided. Email/password sign-in, registration and an editable public contributo
 name are implemented through the API. Paginated version history and explicit
 Super Admin publication/withdrawal with audit reasons are implemented. See
 [publication boundaries](docs/adr/0009-explicit-version-publication.md).
+Local image previews and original downloads use verified private R2 reads through
+the API; see [delivery boundaries](docs/adr/0010-verified-original-image-delivery.md)
+for formats, limits and acceptance scope. Hosted delivery is not deployed yet.
 Upload/moderation forms and premium product
 interfaces are not implemented yet. This is not the complete MVP.
 
