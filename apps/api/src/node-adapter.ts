@@ -1,3 +1,4 @@
+import { uploadLimit } from "./submissions.ts";
 import { createServer } from "node:http";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -21,9 +22,16 @@ export function createApiServer(
           headers.set(key, Array.isArray(value) ? value.join(",") : value);
       const chunks: Buffer[] = [];
       let size = 0;
+      const incomingLimit =
+        incoming.method === "PUT" &&
+        /^\/api\/v1\/submissions\/[0-9a-f-]+\/original$/.test(
+          incoming.url ?? "",
+        )
+          ? uploadLimit
+          : 4096;
       for await (const chunk of incoming) {
         size += chunk.length;
-        if (size > 4096) {
+        if (size > incomingLimit) {
           outgoing.writeHead(413, { "Cache-Control": "no-store" });
           outgoing.end("Request is too large.");
           return;

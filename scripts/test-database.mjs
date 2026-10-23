@@ -73,7 +73,7 @@ const migrationFiles = fs
   .readdirSync("supabase/migrations")
   .filter((name) => name.endsWith(".sql"))
   .sort();
-assert.equal(migrationFiles.length, 9);
+assert.equal(migrationFiles.length, 10);
 const sql = migrationFiles.map((file) =>
   fs.readFileSync(path.join("supabase/migrations", file), "utf8"),
 );
@@ -119,7 +119,7 @@ try {
   const tables = await fresh.query(
     "select relname,relrowsecurity from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='catalog' and c.relkind='r'",
   );
-  assert.equal(tables.rows.length, 13);
+  assert.equal(tables.rows.length, 14);
   assert.ok(tables.rows.every((row) => row.relrowsecurity));
   for (const role of ["anon", "authenticated"]) {
     await fresh.query(`set role ${role}`);
@@ -151,6 +151,17 @@ try {
       )
     ).rows[0].n,
     0,
+  );
+  await fresh.query("begin");
+  try {
+    await fresh.query(
+      fs.readFileSync("supabase/tests/asset-submissions.sql", "utf8"),
+    );
+  } finally {
+    await fresh.query("rollback");
+  }
+  console.log(
+    "PASS: contributor/session/credit guards, immutable private originals, idempotent completion, revisions, moderation transitions, audit, expiry, quotas and denied browser RPCs.",
   );
   // Exercise actual planner output against PostgreSQL, inside a rolled-back fixture.
   await fresh.query("begin");
@@ -496,7 +507,7 @@ try {
     (error) => error.code === "P0001",
   );
   console.log(
-    "PASS: nine migrations on disposable PostgreSQL 17; empty/existing/ambiguous admin guards, 13 RLS tables, denied browser roles, transactional import/publication and rollback-only asset-history SQL.",
+    "PASS: ten migrations on disposable PostgreSQL 17; empty/existing/ambiguous admin guards, 14 RLS tables, denied browser roles, transactional import/publication and rollback-only asset-history SQL.",
   );
   console.log(
     "Auth tables are a minimal SQL contract fixture; this is not a full Supabase Auth/API stack test.",
