@@ -14,9 +14,11 @@ Super Admin publication/withdrawal with audit reasons are implemented. See
 [publication boundaries](docs/adr/0009-explicit-version-publication.md).
 Local image previews and original downloads use verified private R2 reads through
 the API; see [delivery boundaries](docs/adr/0010-verified-original-image-delivery.md)
-for formats, limits and acceptance scope. Hosted delivery is not deployed yet.
-Upload/moderation forms and premium product
-interfaces are not implemented yet. This is not the complete MVP.
+for formats, limits and acceptance scope. Hosted read-only delivery was accepted
+on 2026-10-21. Image submission/revision forms and explicit moderation are now
+implemented locally; their additive migration and real-service acceptance remain
+pending. See [submission acceptance](docs/ASSET-SUBMISSION-ACCEPTANCE.md). Premium
+product interfaces and video transport remain planned. This is not the complete MVP.
 
 The existing Supabase database and private Cloudflare R2 bucket remain in place.
 An additive history/credit migration preserves the existing game and six legacy
