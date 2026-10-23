@@ -1,3 +1,4 @@
+import { isSubmissionRoute, submissionRequest } from "./submissions.ts";
 import { createClient } from "@supabase/supabase-js";
 import { assetRoles, type GameSummary } from "@knowngdb/contracts";
 import { creditOptions } from "./asset-policy.ts";
@@ -15,6 +16,8 @@ export interface ApiEnvironment {
   R2_BUCKET?: string;
   R2_READ_ACCESS_KEY_ID?: string;
   R2_READ_SECRET_ACCESS_KEY?: string;
+  R2_UPLOAD_ACCESS_KEY_ID?: string;
+  R2_UPLOAD_SECRET_ACCESS_KEY?: string;
 }
 const reply = (body: unknown, status = 200) =>
   Response.json(body, {
@@ -31,7 +34,9 @@ export async function handleRequest(
   const requestUrl = new URL(request.url);
   const path = requestUrl.pathname;
   if (
-    (accountPaths.includes(path) || path.startsWith("/api/v1/admin/")) &&
+    (accountPaths.includes(path) ||
+      path.startsWith("/api/v1/admin/") ||
+      isSubmissionRoute(path)) &&
     requestUrl.protocol !== "https:" &&
     !["localhost", "127.0.0.1"].includes(requestUrl.hostname)
   )
@@ -43,6 +48,7 @@ export async function handleRequest(
       "/api/v1/account/logout",
       "/api/v1/admin/session",
     ].includes(path) ||
+    isSubmissionRoute(path) ||
     ((isVersionRoute(path) || isDeliveryRoute(path)) &&
       path.startsWith("/api/v1/admin/"))
   )
@@ -56,6 +62,7 @@ async function routeRequest(
   env: ApiEnvironment,
 ): Promise<Response> {
   const url = new URL(request.url);
+  if (isSubmissionRoute(url.pathname)) return submissionRequest(request, env);
   if (isDeliveryRoute(url.pathname)) return deliveryRequest(request, env);
   if (isVersionRoute(url.pathname)) return versionRequest(request, env);
   if (accountPaths.includes(url.pathname)) return accountRequest(request, env);

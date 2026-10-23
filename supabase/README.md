@@ -25,7 +25,7 @@ files stay outside Git and are removed after shutdown. The runner never loads
 Reviewed native-library symlinks are restored only inside the dependency folder;
 installation retains `npm ci --ignore-scripts`.
 
-Tests replay all nine migrations and check thirteen RLS tables, SQLSTATE 42501
+Tests replay all ten local migrations and check fourteen RLS tables, SQLSTATE 42501
 for browser roles and service access. Administrator guards cover empty, existing
 and ambiguous inventories. Asset-history checks roll back. Minimal Auth tables satisfy
 foreign-key and trigger dependencies; this is not a full GoTrue/PostgREST test.
@@ -76,3 +76,7 @@ authenticated grants. Runtime authorization must verify the user and current
 membership before privileged writes. No public contributor profile was invented
 for the existing user; they choose their own public display name before personal
 credit is enabled.
+
+The tenth migration, `20261022010000_asset_submissions.sql`, is pending remotely.
+It is tested only on disposable PostgreSQL; never infer hosted application from
+its presence in this directory. See [submission acceptance](../docs/ASSET-SUBMISSION-ACCEPTANCE.md).

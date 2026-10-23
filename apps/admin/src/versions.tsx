@@ -112,6 +112,49 @@ export function VersionAdministration({ role }: { role: AdminRole }) {
       setPending(null);
     }
   }
+  async function reviewVersion(
+    event: FormEvent<HTMLFormElement>,
+    version: VersionSummary,
+  ) {
+    event.preventDefault();
+    if (pending) return;
+    const form = event.currentTarget;
+    const reason = String(new FormData(form).get("reason") ?? "").trim();
+    const status = (event.nativeEvent as SubmitEvent).submitter?.getAttribute(
+      "value",
+    );
+    if (!reason || !status) return;
+    setPending(version.id);
+    setMessage("");
+    try {
+      const response = await fetch(
+        `/api/v1/admin/asset-versions/${version.id}/review`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            expectedStatus: version.moderation,
+            status,
+            reason,
+          }),
+        },
+      );
+      const data = await response.json();
+      if (!response.ok)
+        throw Error(
+          data.error ||
+            "Review could not be confirmed. Refresh before retrying.",
+        );
+      await load();
+      setMessage(
+        "Review saved. Publication remains a separate Super Admin action.",
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Review failed.");
+    } finally {
+      setPending(null);
+    }
+  }
   return (
     <section aria-labelledby="version-history-heading">
       <div className="version-toolbar">
@@ -196,6 +239,50 @@ export function VersionAdministration({ role }: { role: AdminRole }) {
                 <p className="version-reason">
                   Last recorded reason: {version.changeReason}
                 </p>
+              ) : null}
+              {!version.published &&
+              ["submitted", "in_review"].includes(version.moderation) ? (
+                <form
+                  className="publication-form"
+                  onSubmit={(event) => void reviewVersion(event, version)}
+                >
+                  <label>
+                    Review reason
+                    <textarea
+                      name="reason"
+                      required
+                      maxLength={2000}
+                      disabled={Boolean(pending)}
+                    />
+                  </label>
+                  {version.moderation === "submitted" ? (
+                    <button
+                      value="in_review"
+                      disabled={Boolean(pending) || loading}
+                    >
+                      Start review
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        value="approved"
+                        disabled={
+                          Boolean(pending) ||
+                          loading ||
+                          !version.storageVerified
+                        }
+                      >
+                        Approve version
+                      </button>
+                      <button
+                        value="rejected"
+                        disabled={Boolean(pending) || loading}
+                      >
+                        Reject version
+                      </button>
+                    </>
+                  )}
+                </form>
               ) : null}
               {role === "super_admin" &&
               (version.published || version.canPublish) ? (
