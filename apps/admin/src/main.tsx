@@ -1,3 +1,4 @@
+import { AssetSubmission } from "@knowngdb/ui/submission";
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { Health, AdminRole } from "@knowngdb/contracts";
@@ -8,6 +9,7 @@ import { VersionAdministration } from "./versions.tsx";
 function App() {
   const [health, setHealth] = useState<Health | null>(null);
   const [error, setError] = useState("");
+  const [revision, setRevision] = useState(0);
   const [role, setRole] = useState<AdminRole | null>(null);
   useEffect(() => {
     const controller = new AbortController();
@@ -31,6 +33,10 @@ function App() {
       </header>
       <main>
         <Account admin onRoleChange={setRole} />
+        <AssetSubmission
+          role={role}
+          onSubmitted={() => setRevision((value) => value + 1)}
+        />
         <h1>Catalog operations.</h1>
         <p>
           The administration application has its own entry point and build.
@@ -56,7 +62,7 @@ function App() {
           their history.
         </p>
         {role ? (
-          <VersionAdministration role={role} />
+          <VersionAdministration key={revision} role={role} />
         ) : (
           <p>
             Sign in with administrative permission to review asset versions.

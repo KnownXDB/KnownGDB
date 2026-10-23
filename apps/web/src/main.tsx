@@ -1,3 +1,4 @@
+import { AssetSubmission } from "@knowngdb/ui/submission";
 import { useEffect, useState, type FormEvent } from "react";
 import { createRoot } from "react-dom/client";
 import type { GameSummary, Health } from "@knowngdb/contracts";
@@ -53,6 +54,7 @@ function App() {
       </header>
       <main>
         <Account />
+        <AssetSubmission />
         <h1>Find your next asset.</h1>
         <p>
           Search published games by title. Each canonical game keeps its own
@@ -125,7 +127,7 @@ function App() {
         </p>
         <p>
           Published versions include image previews and original downloads.
-          Submission workflows and video delivery are not implemented yet.
+          Image submissions require review; video delivery remains planned.
         </p>
       </main>
     </>

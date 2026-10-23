@@ -5,6 +5,7 @@
   "exports": {
     "./asset-file": "./src/asset-file.tsx",
     "./account": "./src/account.tsx",
-    "./workspace.css": "./src/workspace.css"
+    "./workspace.css": "./src/workspace.css",
+    "./submission": "./src/submission.tsx"
   }
 }
