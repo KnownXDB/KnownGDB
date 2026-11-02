@@ -73,7 +73,7 @@ const migrationFiles = fs
   .readdirSync("supabase/migrations")
   .filter((name) => name.endsWith(".sql"))
   .sort();
-assert.equal(migrationFiles.length, 21);
+assert.equal(migrationFiles.length, 22);
 const sql = migrationFiles.map((file) =>
   fs.readFileSync(path.join("supabase/migrations", file), "utf8"),
 );
@@ -121,6 +121,17 @@ try {
   );
   assert.equal(tables.rows.length, 25);
   assert.ok(tables.rows.every((row) => row.relrowsecurity));
+  for (const role of ["anon", "authenticated"]) {
+    assert.equal(
+      (
+        await fresh.query(
+          "select has_function_privilege($1::name,'catalog.bootstrap_admin()','execute') as allowed",
+          [role],
+        )
+      ).rows[0].allowed,
+      false,
+    );
+  }
   for (const role of ["anon", "authenticated"]) {
     await fresh.query(`set role ${role}`);
     await assert.rejects(
@@ -582,7 +593,7 @@ try {
     (error) => error.code === "P0001",
   );
   console.log(
-    "PASS: twenty-one migrations on disposable PostgreSQL 17; empty/existing/ambiguous admin guards, 25 RLS tables, denied browser roles, transactional import/publication/metadata and store-observation SQL.",
+    "PASS: twenty-two migrations on disposable PostgreSQL 17; empty/existing/ambiguous admin guards, 25 RLS tables, denied browser roles, transactional import/publication/metadata and store-observation SQL.",
   );
   console.log(
     "Auth tables are a minimal SQL contract fixture; this is not a full Supabase Auth/API stack test.",
