@@ -201,12 +201,19 @@ async function routeRequest(
     const { data, error } = await lookup;
     if (error)
       return reply({ error: "Catalog is temporarily unavailable." }, 503);
-    const games: GameSummary[] = (data ?? []).map((row) => ({
-      id: row.game_id,
-      title: row.title,
-      language: row.language,
-      itemType: row.games[0]?.item_type ?? "game",
-    }));
+    const games: GameSummary[] = (data ?? []).map((row) => {
+      const relation = row.games as unknown as
+        | { item_type: GameSummary["itemType"] }
+        | Array<{ item_type: GameSummary["itemType"] }>;
+      return {
+        id: row.game_id,
+        title: row.title,
+        language: row.language,
+        itemType:
+          (Array.isArray(relation) ? relation[0] : relation)?.item_type ??
+          "game",
+      };
+    });
     return reply({ games });
   } catch {
     return reply({ error: "Service is temporarily unavailable." }, 503);
