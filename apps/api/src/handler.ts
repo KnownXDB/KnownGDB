@@ -72,6 +72,7 @@ export async function handleRequest(
       "/api/v1/admin/session",
     ].includes(path) ||
     path === "/api/v1/admin/games" ||
+    path.startsWith("/api/v1/admin/store/") ||
     (isMetadataRoute(path) && path.startsWith("/api/v1/admin/")) ||
     isSubmissionRoute(path) ||
     ((isVersionRoute(path) || isDeliveryRoute(path)) &&
