@@ -12,6 +12,7 @@ import { AssetSubmission } from "@knowngdb/ui/submission";
 import { PublishedVersions } from "./versions.tsx";
 import { PublishedGameMetadata } from "./game-metadata.tsx";
 import "@knowngdb/ui/workspace.css";
+import { Developers } from "./developers.tsx";
 function App() {
   const [dirty, setDirty] = useState(false);
   const route = useWorkspaceRoute(
@@ -173,4 +174,10 @@ function App() {
     </Workspace>
   );
 }
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  window.location.pathname.replace(/\/$/, "") === "/developers" ? (
+    <Developers />
+  ) : (
+    <App />
+  ),
+);

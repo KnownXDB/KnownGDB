@@ -1,5 +1,9 @@
 # API consumption
 
+Public developer reference and interactive API playground:
+`https://knowngdb.netlify.app/developers`. This is separate from account key
+management and repository contributor/implementation documentation.
+
 ## Account and key
 
 Open the public web application's account view and choose **Create account**.

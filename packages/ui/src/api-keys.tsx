@@ -154,8 +154,7 @@ export function ApiKeys() {
       </ul>
       <p role="status">{busy ? "Working…" : message}</p>
       <p>
-        Use Authorization: Bearer &lt;key&gt; with GET
-        /api/v1/consumer/games?q=title.
+        <a href="/developers">API documentation and playground ↗</a>
       </p>
     </section>
   );

@@ -1,0 +1,177 @@
+.developer-portal {
+  min-height: 100vh;
+  background: #101722;
+}
+.developer-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--line);
+  background: #101722;
+}
+.developer-header > a:last-child {
+  margin-left: auto;
+}
+.developer-header .wordmark {
+  margin: 0;
+}
+.developer-header > span {
+  color: var(--muted);
+}
+.developer-layout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  max-width: 1500px;
+  margin: auto;
+}
+.developer-index {
+  position: sticky;
+  top: 85px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 34px 24px;
+}
+.developer-index > span,
+.developer-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+.developer-index > a {
+  padding: 10px 0;
+  color: #c3d3e5;
+}
+.developer-index > a:last-child {
+  margin-top: 25px;
+}
+.developer-content {
+  min-width: 0;
+  padding: 25px 50px 90px;
+  border-left: 1px solid var(--line);
+}
+.developer-content section {
+  padding: 30px 0;
+  border-bottom: 1px solid var(--line);
+  scroll-margin-top: 95px;
+}
+.developer-content h1 {
+  font-size: clamp(30px, 4vw, 48px);
+  max-width: 750px;
+}
+.developer-content h2 {
+  margin-bottom: 18px;
+}
+.developer-content pre {
+  padding: 22px;
+  background: #0b111b;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: auto;
+  max-width: 100%;
+  line-height: 1.7;
+}
+.developer-content pre code {
+  overflow-wrap: normal;
+  white-space: pre;
+}
+.developer-base {
+  display: block;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  background: #172130;
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+.developer-method {
+  color: #84dfb1;
+  margin-right: 12px;
+}
+.developer-table {
+  overflow: auto;
+}
+.developer-content table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.developer-content th,
+.developer-content td {
+  padding: 13px;
+  border-bottom: 1px solid var(--line);
+}
+.developer-content th {
+  color: var(--muted);
+  font-weight: 500;
+}
+.developer-languages,
+.developer-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 18px 0;
+}
+.developer-content form {
+  display: grid;
+  gap: 16px;
+  max-width: 760px;
+}
+.developer-content [role="status"] {
+  margin-top: 20px;
+  font-weight: 600;
+}
+.developer-content input {
+  max-width: 100%;
+}
+@media (max-width: 760px) {
+  .developer-header {
+    position: static;
+    padding: 18px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .developer-header > span {
+    display: none;
+  }
+  .developer-header .wordmark {
+    font-size: 20px;
+  }
+  .developer-layout {
+    grid-template-columns: 1fr;
+  }
+  .developer-index {
+    position: static;
+    padding: 15px 18px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 5px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .developer-index > span,
+  .developer-index > a:last-child {
+    display: none;
+  }
+  .developer-index > a {
+    padding: 7px 0;
+  }
+  .developer-content {
+    padding: 5px 18px 50px;
+    border: 0;
+  }
+  .developer-content section {
+    scroll-margin-top: 15px;
+  }
+  .developer-content pre {
+    padding: 14px;
+    font-size: 12px;
+  }
+  .developer-content th,
+  .developer-content td {
+    padding: 10px;
+  }
+}
