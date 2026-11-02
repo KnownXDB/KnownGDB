@@ -1,4 +1,5 @@
 import type { XboxStorePreview } from "@knowngdb/contracts";
+import { OfficialStoreResponseError } from "./store-errors.ts";
 
 const xboxStoreId = /^[A-Z0-9]{12}$/;
 const officialHost = "apps.microsoft.com";
@@ -113,7 +114,8 @@ export async function fetchXboxStorePreview(
       AbortSignal.timeout(15000),
     ]),
   });
-  if (!response.ok) throw Error(`Xbox Store returned HTTP ${response.status}.`);
+  if (!response.ok)
+    throw new OfficialStoreResponseError("Xbox Store", response.status);
   return parseXboxStorePage(
     await response.text(),
     storeId,

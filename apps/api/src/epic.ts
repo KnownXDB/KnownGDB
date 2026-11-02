@@ -3,6 +3,7 @@ import type {
   EpicStoreIdentityKind,
   EpicStorePreview,
 } from "@knowngdb/contracts";
+import { OfficialStoreResponseError } from "./store-errors.ts";
 
 const epicSlug = /^[A-Za-z0-9][A-Za-z0-9-]{0,119}$/;
 const epicLocale = /^[a-z]{2,3}-[A-Z]{2}$/;
@@ -170,7 +171,7 @@ export async function fetchEpicStorePreview(
     ]),
   });
   if (!response.ok)
-    throw Error(`Epic Games Store returned HTTP ${response.status}.`);
+    throw new OfficialStoreResponseError("Epic Games Store", response.status);
   return parseEpicStorePage(
     await response.text(),
     slug,

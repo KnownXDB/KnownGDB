@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { verifyAdmin } from "./admin-access.ts";
 import { readJsonObject } from "./request-body.ts";
 import { fetchXboxStorePreview } from "./xbox.ts";
+import { storePreviewFailure } from "./store-errors.ts";
 import type { ApiEnvironment } from "./handler.ts";
 
 const reply = (body: unknown, status = 200) =>
@@ -36,15 +37,12 @@ export async function xboxPreviewRequest(
     });
     return reply({ preview });
   } catch (error) {
-    return reply(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Xbox Store preview is unavailable.",
-      },
-      502,
+    const failure = storePreviewFailure(
+      error,
+      "Xbox / Microsoft Store",
+      "Xbox Store preview is unavailable.",
     );
+    return reply(failure.body, failure.status);
   }
 }
 
