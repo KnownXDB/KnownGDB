@@ -1,6 +1,6 @@
 # ADR 0022: Account consumption keys
 
-Status: implemented locally; hosted acceptance pending.
+Status: activated on the hosted testing environment; real-account acceptance pending.
 
 Confirmed account owners manage consumption keys through the existing encrypted
 cookie session boundary. The API verifies Auth identity and the database rechecks

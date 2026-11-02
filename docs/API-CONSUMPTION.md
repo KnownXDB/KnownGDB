@@ -59,7 +59,14 @@ the same-origin `Origin` header when authenticated by cookie.
 
 ## Activation and acceptance
 
-Apply the additive `account_api_keys` migration to the intended environment only
+The hosted API origin is `https://knowngdb.netlify.app`.
+On 2026-11-02, the additive migration was applied and deployment
+`6ae90f6ff2d096714c3ea5ff` activated source `f2af5cf`. Hosted health/catalog reads,
+anonymous key-route denial and database key issue/consume/revoke passed. The
+database verification used a rolled-back transaction and retained no test keys.
+Real email confirmation and signed-in browser acceptance remain pending.
+
+Apply the additive `account_api_keys` migration to other environments only
 with explicit authorization. Configure private Supabase credentials, session
 encryption, email delivery and permitted Auth redirect URLs. Run `npm run check`.
 Then verify real registration, confirmation, sign-in, reload, key creation,

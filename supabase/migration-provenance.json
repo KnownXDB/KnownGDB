@@ -35,6 +35,12 @@
   ],
   "applied": [
     {
+      "version": "20261102223130",
+      "name": "account_api_keys",
+      "sha256": "b3c4f12c54d9a70b4fd14a618a7caaa9b3fa5e62dba106781bbf6596500bf9bb",
+      "note": "Explicitly authorized hosted activation on 2026-11-02. Supabase assigned this version; local file renamed without content changes. Existing game and asset counts preserved. RLS, denied browser grants, invalid-key denial and transactional issue/consume/revoke verified."
+    },
+    {
       "version": "20261020210124",
       "name": "legacy_asset_import_registry",
       "sha256": "8c1f39a8c02387f25cdf1c8d6d7c46a9cb9432cc95c1edbf2e7f6182aee503f3"
