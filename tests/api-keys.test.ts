@@ -32,7 +32,22 @@ test("consumption keys are hashed, enforced and isolated from account permission
       received = JSON.parse(Buffer.concat(chunks).toString());
       res.end(JSON.stringify(valid));
     } else if (req.url?.startsWith("/rest/v1/game_localizations"))
-      res.end("[]");
+      res.end(
+        JSON.stringify([
+          {
+            game_id: "00000000-0000-4000-8000-000000000001",
+            title: "Fixture demo",
+            language: "en",
+            games: { status: "published", item_type: "demo" },
+          },
+          {
+            game_id: "00000000-0000-4000-8000-000000000002",
+            title: "Fixture expansion",
+            language: "en",
+            games: [{ status: "published", item_type: "expansion" }],
+          },
+        ]),
+      );
     else {
       res.statusCode = 401;
       res.end('{"message":"Invalid credentials"}');
@@ -53,7 +68,22 @@ test("consumption keys are hashed, enforced and isolated from account permission
     assert.equal((await handleRequest(request(), env)).status, 401);
     const response = await handleRequest(request(secret), env);
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { games: [] });
+    assert.deepEqual(await response.json(), {
+      games: [
+        {
+          id: "00000000-0000-4000-8000-000000000001",
+          title: "Fixture demo",
+          language: "en",
+          itemType: "demo",
+        },
+        {
+          id: "00000000-0000-4000-8000-000000000002",
+          title: "Fixture expansion",
+          language: "en",
+          itemType: "expansion",
+        },
+      ],
+    });
     assert.deepEqual(received, { p_hash: hashApiKey(secret) });
     valid = false;
     assert.equal((await handleRequest(request(secret), env)).status, 401);
