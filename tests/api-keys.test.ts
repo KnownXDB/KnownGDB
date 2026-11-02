@@ -2,7 +2,23 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { handleRequest } from "../apps/api/src/handler.ts";
-import { hashApiKey } from "../apps/api/src/api-keys.ts";
+import { hashApiKey, validKeyExpiration } from "../apps/api/src/api-keys.ts";
+
+test("key expiration permits indefinite lifetime and future dates only", () => {
+  assert.equal(validKeyExpiration(null), true);
+  assert.equal(
+    validKeyExpiration(new Date(Date.now() + 86400000).toISOString()),
+    true,
+  );
+  for (const value of [
+    undefined,
+    90,
+    "never",
+    "2020-01-01T00:00:00.000Z",
+    "2099-02-31T00:00:00.000Z",
+  ])
+    assert.equal(validKeyExpiration(value), false);
+});
 
 test("consumption keys are hashed, enforced and isolated from account permissions", async () => {
   let valid = true;

@@ -4,7 +4,7 @@ type Key = {
   id: string;
   name: string;
   prefix: string;
-  expiresAt: string;
+  expiresAt: string | null;
   revokedAt: string | null;
 };
 export function ApiKeys() {
@@ -12,6 +12,7 @@ export function ApiKeys() {
   const [secret, setSecret] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [expiration, setExpiration] = useState("never");
   async function call(method = "GET", body?: unknown) {
     const response = await fetch("/api/v1/account/api-keys", {
       method,
@@ -44,7 +45,11 @@ export function ApiKeys() {
     setSecret("");
     setMessage("");
     try {
-      const data = await call("POST", { name });
+      const expiresAt =
+        expiration === "never"
+          ? null
+          : new Date(Date.now() + Number(expiration) * 86400000).toISOString();
+      const data = await call("POST", { name, expiresAt });
       setSecret(data.key);
       form.reset();
       setKeys((await call()).keys);
@@ -71,17 +76,44 @@ export function ApiKeys() {
       setBusy(false);
     }
   }
+  async function removeExpiration(id: string) {
+    setBusy(true);
+    setMessage("");
+    try {
+      await call("PATCH", { id, expiresAt: null });
+      setKeys((await call()).keys);
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Unable to update expiration.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <section aria-label="API keys">
       <h3>API keys</h3>
       <p>
-        Create a key for server-side catalog reads. Keys expire after 90 days.
-        Keep them private.
+        Create a key for server-side catalog reads. Choose an expiration or no
+        expiration. Keep them private.
       </p>
       <form onSubmit={create}>
         <label>
           Key name
           <input name="name" required maxLength={80} />
+        </label>
+        <label>
+          Expiration
+          <select
+            value={expiration}
+            onChange={(event) => setExpiration(event.target.value)}
+            disabled={busy}
+          >
+            <option value="never">Never expires</option>
+            <option value="30">30 days</option>
+            <option value="90">90 days</option>
+            <option value="365">1 year</option>
+          </select>
         </label>
         <button disabled={busy}>Create API key</button>
       </form>
@@ -98,8 +130,18 @@ export function ApiKeys() {
       <ul>
         {keys.map((key) => (
           <li key={key.id}>
-            {key.name} · {key.prefix}… · expires{" "}
-            {new Date(key.expiresAt).toLocaleDateString()}{" "}
+            {key.name} · {key.prefix}… ·{" "}
+            {key.expiresAt
+              ? `expires ${new Date(key.expiresAt).toLocaleDateString()}`
+              : "Never expires"}{" "}
+            {!key.revokedAt && key.expiresAt && (
+              <button
+                disabled={busy}
+                onClick={() => void removeExpiration(key.id)}
+              >
+                Remove expiration
+              </button>
+            )}
             {key.revokedAt ? (
               "Revoked"
             ) : (

@@ -73,7 +73,7 @@ const migrationFiles = fs
   .readdirSync("supabase/migrations")
   .filter((name) => name.endsWith(".sql"))
   .sort();
-assert.equal(migrationFiles.length, 23);
+assert.equal(migrationFiles.length, 24);
 const sql = migrationFiles.map((file) =>
   fs.readFileSync(path.join("supabase/migrations", file), "utf8"),
 );
@@ -599,7 +599,7 @@ try {
     (error) => error.code === "P0001",
   );
   console.log(
-    "PASS: twenty-three migrations on disposable PostgreSQL 17; empty/existing/ambiguous admin guards, 26 RLS tables, denied browser roles, transactional import/publication/metadata, API keys and store-observation SQL.",
+    "PASS: twenty-four migrations on disposable PostgreSQL 17; empty/existing/ambiguous admin guards, 26 RLS tables, denied browser roles, transactional import/publication/metadata, API keys and store-observation SQL.",
   );
   console.log(
     "Auth tables are a minimal SQL contract fixture; this is not a full Supabase Auth/API stack test.",

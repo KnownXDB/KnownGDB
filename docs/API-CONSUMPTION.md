@@ -7,7 +7,10 @@ Confirm the email if requested, then sign in. In **API keys**, enter a descripti
 name and choose **Create API key**. Copy the key immediately; it cannot be
 retrieved later. Store it in your server's secret configuration.
 
-Keys have the `catalog:read` scope and expire after 90 days. They grant no account,
+Keys have the `catalog:read` scope. Choose **Never expires** (the default), 30 days,
+90 days or 1 year when creating a key. Existing dated keys keep their expiration;
+choose **Remove expiration** to keep an active key indefinitely without replacing
+its secret. The API also supports a custom future expiration. Keys grant no account,
 administrative, upload or moderation permissions. To rotate, create a replacement,
 update the consuming service, verify a successful request, then revoke the old
 key in the account view. Revocation applies to subsequent authorization checks;
@@ -54,8 +57,13 @@ the same-origin `Origin` header when authenticated by cookie.
 | `/api/v1/account/signup` | POST | `email`, `password` | authenticated session or `confirmationRequired` |
 | `/api/v1/account/login` | POST | `email`, `password` | authenticated session |
 | `/api/v1/account/api-keys` | GET | none | `keys` metadata, never hashes or secrets |
-| `/api/v1/account/api-keys` | POST | `name` | `id`, `name`, `prefix`, `scope`, `expiresAt`, one-time `key` |
+| `/api/v1/account/api-keys` | POST | `name`, optional `expiresAt` | `id`, `name`, `prefix`, `scope`, `expiresAt`, one-time `key` |
+| `/api/v1/account/api-keys` | PATCH | `id`, `expiresAt` | `updated`, restricted to active keys owned by the account |
 | `/api/v1/account/api-keys` | DELETE | `id` | idempotent `revoked: true`, restricted to the owner |
+
+`expiresAt` is `null` for no expiration, or a future UTC ISO timestamp such as
+`2027-12-31T23:59:59.000Z`. Omitting it on creation means no expiration. Revoked
+keys remain revoked when an expiration change is attempted.
 
 ## Activation and acceptance
 

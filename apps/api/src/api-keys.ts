@@ -15,8 +15,18 @@ const reply = (body: unknown, status = 200) =>
   });
 export const hashApiKey = (key: string) =>
   createHash("sha256").update(key).digest("hex");
+export function validKeyExpiration(value: unknown): boolean {
+  return (
+    value === null ||
+    (typeof value === "string" &&
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) &&
+      Number.isFinite(Date.parse(value)) &&
+      new Date(value).toISOString() === value &&
+      Date.parse(value) > Date.now())
+  );
+}
 export async function apiKeysRequest(request: Request, env: ApiEnvironment) {
-  if (!["GET", "POST", "DELETE"].includes(request.method))
+  if (!["GET", "POST", "PATCH", "DELETE"].includes(request.method))
     return reply({ error: "Method not allowed." }, 405);
   if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY)
     return reply({ error: "Key service is not configured." }, 503);
@@ -62,9 +72,27 @@ export async function apiKeysRequest(request: Request, env: ApiEnvironment) {
       (!name ||
         name.length > 80 ||
         /[\p{Cc}\p{Cf}<>]/u.test(name) ||
-        Object.keys(body).some((k) => k !== "name"))
+        Object.keys(body).some((k) => !["name", "expiresAt"].includes(k)))
     )
       return reply({ error: "Provide a name of 1 to 80 characters." }, 400);
+    const expiresAt =
+      body.expiresAt === undefined && request.method === "POST"
+        ? null
+        : body.expiresAt;
+    if (
+      ["POST", "PATCH"].includes(request.method) &&
+      !validKeyExpiration(expiresAt)
+    )
+      return reply(
+        { error: "Expiration must be null or a future UTC ISO timestamp." },
+        400,
+      );
+    if (
+      request.method === "PATCH" &&
+      (!/^[0-9a-f-]{36}$/i.test(id) ||
+        Object.keys(body).some((k) => !["id", "expiresAt"].includes(k)))
+    )
+      return reply({ error: "Provide a valid key ID and expiration." }, 400);
     if (
       request.method === "DELETE" &&
       (!/^[0-9a-f-]{36}$/i.test(id) ||
@@ -83,6 +111,7 @@ export async function apiKeysRequest(request: Request, env: ApiEnvironment) {
       p_name: name || null,
       p_hash: key ? hashApiKey(key) : null,
       p_prefix: key?.slice(0, 13) ?? null,
+      p_expires_at: expiresAt ?? null,
     });
     if (result.error)
       return reply(
