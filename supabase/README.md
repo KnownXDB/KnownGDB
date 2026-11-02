@@ -25,7 +25,7 @@ files stay outside Git and are removed after shutdown. The runner never loads
 Reviewed native-library symlinks are restored only inside the dependency folder;
 installation retains `npm ci --ignore-scripts`.
 
-Tests replay all ten local migrations and check fourteen RLS tables, SQLSTATE 42501
+Tests replay all twelve local migrations and check fourteen RLS tables, SQLSTATE 42501
 for browser roles and service access. Administrator guards cover empty, existing
 and ambiguous inventories. Asset-history checks roll back. Minimal Auth tables satisfy
 foreign-key and trigger dependencies; this is not a full GoTrue/PostgREST test.
@@ -77,6 +77,17 @@ membership before privileged writes. No public contributor profile was invented
 for the existing user; they choose their own public display name before personal
 credit is enabled.
 
-The tenth migration, `20261022010000_asset_submissions.sql`, is pending remotely.
-It is tested only on disposable PostgreSQL; never infer hosted application from
-its presence in this directory. See [submission acceptance](../docs/ASSET-SUBMISSION-ACCEPTANCE.md).
+The tenth migration, `20261023002315_asset_submissions.sql`, was applied with
+explicit authorization. Its assigned remote version and SQL fingerprints are
+recorded in migration provenance. Existing catalog row digests were unchanged.
+Separate runtime credentials are configured locally; real upload acceptance remains pending. See [submission acceptance](../docs/ASSET-SUBMISSION-ACCEPTANCE.md).
+
+The eleventh migration, `20261023005246_image_upload_limit.sql`, raises the
+reservation size bound to 5 MiB without changing existing data. Its source and
+remote SQL fingerprints are recorded. The API and frontend share the same limit;
+full-size hosted transport still needs adaptation before Netlify deployment.
+
+The twelfth migration, `20261023010141_game_intake.sql`, adds service-only draft
+game intake and private administrative draft upload eligibility. It resets the
+effective size bound to 4 MiB to fit the existing Netlify binary request
+transport. Creating a draft never approves or publishes catalog content.

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Recovery, startsInRecovery } from "./recovery.tsx";
+export { startsInRecovery } from "./recovery.tsx";
 import type { AdminRole } from "@knowngdb/contracts";
 
 // Authentication material is owned by the API's HttpOnly cookie.
