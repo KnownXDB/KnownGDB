@@ -82,6 +82,8 @@ consumers, distribution channels and external identifiers.
 
 ## Documentation
 
+- [Accounts and API consumption keys](docs/API-CONSUMPTION.md)
+
 - [External Netlify testing](docs/NETLIFY-TESTING.md)
 - [Roadmap](ROADMAP.md)
 - [Architecture](docs/architecture/overview.md)
