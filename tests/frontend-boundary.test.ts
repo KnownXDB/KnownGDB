@@ -16,6 +16,7 @@ for (const app of ["web", "admin"]) {
     await writeFile(path.join(fixture, "allowed.txt"), "public marker");
     const server = await createServer({
       configFile: path.resolve(`apps/${app}/vite.config.ts`),
+      cacheDir: path.join(fixture, "vite-cache"),
       logLevel: "silent",
       server: {
         port: 0,

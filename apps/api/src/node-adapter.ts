@@ -1,4 +1,5 @@
 import { uploadLimit } from "./submissions.ts";
+import { metadataBodyLimit } from "./game-metadata.ts";
 import { createServer } from "node:http";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -28,7 +29,12 @@ export function createApiServer(
           incoming.url ?? "",
         )
           ? uploadLimit
-          : 4096;
+          : incoming.method === "POST" &&
+              /^\/api\/v1\/admin\/games\/[0-9a-f-]+\/metadata$/.test(
+                incoming.url ?? "",
+              )
+            ? metadataBodyLimit
+            : 4096;
       for await (const chunk of incoming) {
         size += chunk.length;
         if (size > incomingLimit) {

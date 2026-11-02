@@ -1,3 +1,5 @@
+import { administrativeGames } from "./games.ts";
+import { isMetadataRoute, metadataRequest } from "./game-metadata.ts";
 import { isSubmissionRoute, submissionRequest } from "./submissions.ts";
 import { createClient } from "@supabase/supabase-js";
 import { assetRoles, type GameSummary } from "@knowngdb/contracts";
@@ -6,6 +8,27 @@ import { accountPaths, accountRequest } from "./account.ts";
 import { withSession } from "./session.ts";
 import { isVersionRoute, versionRequest } from "./versions.ts";
 import { isDeliveryRoute, deliveryRequest } from "./asset-delivery.ts";
+import { isSteamConfirmRoute, isSteamPreviewRoute } from "./steam.ts";
+import { steamConfirmRequest, steamPreviewRequest } from "./steam-preview.ts";
+import { isXboxConfirmRoute, isXboxPreviewRoute } from "./xbox.ts";
+import { xboxConfirmRequest, xboxPreviewRequest } from "./xbox-preview.ts";
+import { isEpicConfirmRoute, isEpicPreviewRoute } from "./epic.ts";
+import { epicConfirmRequest, epicPreviewRequest } from "./epic-preview.ts";
+import { isEAConfirmRoute, isEAPreviewRoute } from "./ea.ts";
+import { eaConfirmRequest, eaPreviewRequest } from "./ea-preview.ts";
+import { isUbisoftConfirmRoute, isUbisoftPreviewRoute } from "./ubisoft.ts";
+import {
+  ubisoftConfirmRequest,
+  ubisoftPreviewRequest,
+} from "./ubisoft-preview.ts";
+import {
+  isPlayStationConfirmRoute,
+  isPlayStationPreviewRoute,
+} from "./playstation.ts";
+import {
+  playStationConfirmRequest,
+  playStationPreviewRequest,
+} from "./playstation-preview.ts";
 
 export interface ApiEnvironment {
   SUPABASE_URL?: string;
@@ -48,6 +71,8 @@ export async function handleRequest(
       "/api/v1/account/logout",
       "/api/v1/admin/session",
     ].includes(path) ||
+    path === "/api/v1/admin/games" ||
+    (isMetadataRoute(path) && path.startsWith("/api/v1/admin/")) ||
     isSubmissionRoute(path) ||
     ((isVersionRoute(path) || isDeliveryRoute(path)) &&
       path.startsWith("/api/v1/admin/"))
@@ -62,9 +87,30 @@ async function routeRequest(
   env: ApiEnvironment,
 ): Promise<Response> {
   const url = new URL(request.url);
+  if (isMetadataRoute(url.pathname)) return metadataRequest(request, env);
+  if (url.pathname === "/api/v1/admin/games")
+    return administrativeGames(request, env);
   if (isSubmissionRoute(url.pathname)) return submissionRequest(request, env);
   if (isDeliveryRoute(url.pathname)) return deliveryRequest(request, env);
   if (isVersionRoute(url.pathname)) return versionRequest(request, env);
+  if (isSteamConfirmRoute(url.pathname))
+    return steamConfirmRequest(request, env);
+  if (isSteamPreviewRoute(url.pathname))
+    return steamPreviewRequest(request, env);
+  if (isXboxConfirmRoute(url.pathname)) return xboxConfirmRequest(request, env);
+  if (isXboxPreviewRoute(url.pathname)) return xboxPreviewRequest(request, env);
+  if (isEpicConfirmRoute(url.pathname)) return epicConfirmRequest(request, env);
+  if (isEpicPreviewRoute(url.pathname)) return epicPreviewRequest(request, env);
+  if (isEAConfirmRoute(url.pathname)) return eaConfirmRequest(request, env);
+  if (isEAPreviewRoute(url.pathname)) return eaPreviewRequest(request, env);
+  if (isUbisoftConfirmRoute(url.pathname))
+    return ubisoftConfirmRequest(request, env);
+  if (isUbisoftPreviewRoute(url.pathname))
+    return ubisoftPreviewRequest(request, env);
+  if (isPlayStationConfirmRoute(url.pathname))
+    return playStationConfirmRequest(request, env);
+  if (isPlayStationPreviewRoute(url.pathname))
+    return playStationPreviewRequest(request, env);
   if (accountPaths.includes(url.pathname)) return accountRequest(request, env);
   if (request.method !== "GET")
     return reply({ error: "Method not allowed." }, 405);
@@ -128,7 +174,7 @@ async function routeRequest(
     let lookup = client
       .schema("catalog")
       .from("game_localizations")
-      .select("game_id,title,language,games!inner(status)")
+      .select("game_id,title,language,games!inner(status,item_type)")
       .eq("moderation_status", "approved")
       .eq("games.status", "published")
       .order("title")
@@ -142,6 +188,7 @@ async function routeRequest(
       id: row.game_id,
       title: row.title,
       language: row.language,
+      itemType: row.games[0]?.item_type ?? "game",
     }));
     return reply({ games });
   } catch {

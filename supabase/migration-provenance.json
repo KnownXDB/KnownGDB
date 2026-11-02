@@ -43,6 +43,40 @@
       "version": "20261020212708",
       "name": "explicit_asset_version_publication",
       "sha256": "868c63f15808e279b0d009c68d5eb422dc0b754497fa1c4af25e9378ae6a7463"
+    },
+    {
+      "version": "20261023002315",
+      "name": "asset_submissions",
+      "sha256": "807690f2a8725384dbfc13f71fb1fb65fd4f865788cd27de3e688ec17353425b",
+      "remoteSqlSha256": "2c98d33d68a64cb2adab245e52376cce2d714f47024d7be2385d553f9efe8f4b",
+      "normalizedSqlSha256": "f4e60d9931bfd708c7d9769caf1788da6ce6c1e68e85b09f27994c8626631da6",
+      "reviewedVersion": "20261022010000",
+      "note": "Applied with explicit maintainer authorization. Supabase assigned the recorded version; local SQL was renamed without content changes. Remote transport added trailing newlines; SQL hashes match after trimming trailing CR/LF. Existing game, asset, version and event digests were unchanged."
+    },
+    {
+      "version": "20261023005246",
+      "name": "image_upload_limit",
+      "sha256": "a5e9897e00a801ae5c8af748b97c15480de06eb1495dc0227b114832a4aec49d",
+      "remoteSqlSha256": "cbecd76aa13752cce083c18515f1921dc822a4531ec00cf9a32bcebdc3777568",
+      "normalizedSqlSha256": "9981615fe97c9239f88eeda00a06e46d810012152d09dde5797f30605c027b72",
+      "note": "Explicitly requested 5 MiB limit. Only the reservation function size bound changes; existing versions and submissions are preserved. Remote transport adds trailing newlines."
+    },
+    {
+      "version": "20261023010141",
+      "name": "game_intake",
+      "sha256": "a588ef8f4e63000260cba615125c4ac03b6583328659dc14dd08c6ad1f7596ef",
+      "remoteSqlSha256": "9ae561f0e4e3dc76289b00322a1ad6677a690e8547043f2b7dc062aea5ffa0d8",
+      "normalizedSqlSha256": "4340fbc991522cdf676a5436b7efef89d2fdf5f54127c5260e424e4cd6213fd4",
+      "note": "Game intake creates unreviewed drafts only and permits administrative private draft uploads. The effective image limit is 4 MiB for the existing hosted transport. Existing game, asset, version, event and submission counts were unchanged. Local final newline normalized after application; normalized SQL fingerprint and recorded remote statement remain unchanged.",
+      "reviewedSourceSha256": "c2612e1725569bfd0b442235198e8e917bec6342372f1c0c993327d5d8ea3e4a"
+    },
+    {
+      "version": "20261023183727",
+      "name": "game_metadata",
+      "sha256": "b9fef007463edfccbe7093f4e268a4751472d35dd5a2a5ed1c4a76c1bb634a0b",
+      "remoteSqlSha256": "b9fef007463edfccbe7093f4e268a4751472d35dd5a2a5ed1c4a76c1bb634a0b",
+      "normalizedSqlSha256": "5df470ea1a11a5ed719444b34a10cc9bf14080f73be2a320e26eed655807691d",
+      "note": "Explicitly authorized additive metadata activation. Eight existing table counts and complete-row fingerprints match before/after. No existing game, localization, asset, collection, version, submission or audit row changed. Remote transport adds trailing newlines."
     }
   ],
   "adaptation": {

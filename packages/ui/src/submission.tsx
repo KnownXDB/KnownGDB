@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   assetRoles,
+  imageUploadLimit,
   type AdminRole,
   type GameSummary,
 } from "@knowngdb/contracts";
@@ -15,13 +16,33 @@ type Collection = {
 export function AssetSubmission({
   role,
   onSubmitted,
+  catalogRevision = 0,
+  standalone = false,
+  onDirtyChange,
 }: {
   role?: AdminRole | null;
+  catalogRevision?: number;
   onSubmitted?: () => void;
+  standalone?: boolean;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false),
+  const [open, setOpen] = useState(standalone),
     [games, setGames] = useState<GameSummary[]>([]),
     [collections, setCollections] = useState<Collection[]>([]);
+  const [hasChanges, setHasChanges] = useState(false);
+  useEffect(() => {
+    onDirtyChange?.(hasChanges);
+  }, [hasChanges, onDirtyChange]);
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
+  useEffect(() => {
+    if (!hasChanges) return;
+    const guard = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", guard);
+    return () => window.removeEventListener("beforeunload", guard);
+  }, [hasChanges]);
   const [busy, setBusy] = useState(false),
     [ready, setReady] = useState(false),
     [message, setMessage] = useState(""),
@@ -54,9 +75,10 @@ export function AssetSubmission({
     const abort = new AbortController();
     setReady(false);
     setMessage("");
-    controller.current = abort;
     Promise.all([
-      fetch("/api/v1/games", { signal: abort.signal }).then((r) => {
+      fetch(role ? "/api/v1/admin/games" : "/api/v1/games", {
+        signal: abort.signal,
+      }).then((r) => {
         if (!r.ok) throw Error("Game selection is temporarily unavailable.");
         return r.json();
       }),
@@ -72,7 +94,12 @@ export function AssetSubmission({
     ])
       .then(([catalog, own]) => {
         if (!abort.signal.aborted) {
-          setGames(catalog.games ?? []);
+          setGames(
+            (catalog.games ?? []).filter(
+              (game: GameSummary & { status?: string }) =>
+                game.status !== "withdrawn",
+            ),
+          );
           setCollections(own.collections ?? []);
           setReady(true);
         }
@@ -81,7 +108,7 @@ export function AssetSubmission({
         if (!abort.signal.aborted) setMessage(e.message);
       });
     return () => abort.abort();
-  }, [open, accountRevision]);
+  }, [open, accountRevision, role, catalogRevision]);
   useEffect(() => () => controller.current?.abort(), []);
   async function send(file: File, id: string, signal: AbortSignal) {
     const extension = file.name.split(".").at(-1)?.toLowerCase();
@@ -106,6 +133,7 @@ export function AssetSubmission({
     setMessage(
       "Original received. The version remains private and requires review before publication.",
     );
+    setHasChanges(false);
     onSubmitted?.();
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -130,9 +158,9 @@ export function AssetSubmission({
         extension = ext === "jpeg" ? "jpg" : ext;
       if (
         !["png", "jpg", "ico"].includes(extension ?? "") ||
-        file.size > 2 * 1024 * 1024
+        file.size > imageUploadLimit
       )
-        throw Error("Use a PNG, JPEG or client ICO no larger than 2 MiB.");
+        throw Error("Use a PNG, JPEG or client ICO no larger than 4 MiB.");
       const digest = Array.from(
         new Uint8Array(
           await crypto.subtle.digest("SHA-256", await file.arrayBuffer()),
@@ -186,15 +214,21 @@ export function AssetSubmission({
   }
   return (
     <section aria-label="Image submission">
-      <button type="button" onClick={() => setOpen((v) => !v)} disabled={busy}>
-        {open ? "Close submission" : "Submit an image"}
-      </button>
+      {!standalone ? (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          disabled={busy}
+        >
+          {open ? "Close submission" : "Submit an image"}
+        </button>
+      ) : null}
       {open ? (
         <>
           <h2>Submit an original image</h2>
           <p>
             Sign in and save a public contributor name first. PNG, JPEG and
-            client ICO originals up to 2 MiB are supported. Submissions stay
+            client ICO originals up to 4 MiB are supported. Submissions stay
             private until reviewed and explicitly published.
           </p>
           <p role="status">
@@ -214,7 +248,11 @@ export function AssetSubmission({
               creating another version.
             </p>
           ) : null}
-          <form className="submission-form" onSubmit={(e) => void submit(e)}>
+          <form
+            className="submission-form"
+            onChange={() => setHasChanges(true)}
+            onSubmit={(e) => void submit(e)}
+          >
             <fieldset disabled={busy || !ready || Boolean(pending.current)}>
               <label>
                 Version history
@@ -247,6 +285,10 @@ export function AssetSubmission({
                         .map((g) => (
                           <option key={g.id} value={g.id}>
                             {g.title}
+                            {(g as GameSummary & { status?: string }).status ===
+                            "draft"
+                              ? " (Draft)"
+                              : ""}
                           </option>
                         ))}
                     </select>

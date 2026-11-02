@@ -34,8 +34,10 @@
   "dependencies": {
     "@aws-sdk/client-s3": "3.1154.0",
     "@supabase/supabase-js": "2.118.0",
+    "lucide-react": "1.61.0",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "simplebar-react": "3.3.2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",

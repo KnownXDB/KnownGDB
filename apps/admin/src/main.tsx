@@ -1,75 +1,98 @@
-import { AssetSubmission } from "@knowngdb/ui/submission";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createRoot } from "react-dom/client";
-import type { Health, AdminRole } from "@knowngdb/contracts";
-import "@knowngdb/ui/workspace.css";
+import type { AdminRole } from "@knowngdb/contracts";
+import {
+  Workspace,
+  PageHeading,
+  useWorkspaceRoute,
+} from "@knowngdb/ui/workspace";
 import { Account } from "@knowngdb/ui/account";
+import { AssetSubmission } from "@knowngdb/ui/submission";
+import { GameCreation } from "./games.tsx";
+import { GamesView } from "./game-list.tsx";
+import { StoreObservations } from "./store-observations.tsx";
 import { VersionAdministration } from "./versions.tsx";
-
+import "@knowngdb/ui/workspace.css";
 function App() {
-  const [health, setHealth] = useState<Health | null>(null);
-  const [error, setError] = useState("");
-  const [revision, setRevision] = useState(0);
-  const [role, setRole] = useState<AdminRole | null>(null);
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch("/api/v1/health", { signal: controller.signal })
-      .then((r) => {
-        if (!r.ok) throw new Error();
-        return r.json();
-      })
-      .then(setHealth)
-      .catch(() => {
-        if (!controller.signal.aborted)
-          setError("The local API is unavailable.");
-      });
-    return () => controller.abort();
-  }, []);
+  const [role, setRole] = useState<AdminRole | null | undefined>(undefined),
+    [dirty, setDirty] = useState(false),
+    [revision, setRevision] = useState(0);
+  const route = useWorkspaceRoute("/games", dirty),
+    parts = route.split("/");
+  const changed = () => setRevision((v) => v + 1);
   return (
-    <>
-      <header>
-        <strong>KnownGDB</strong>
-        <span>Administration workspace</span>
-      </header>
-      <main>
-        <Account admin onRoleChange={setRole} />
-        <AssetSubmission
-          role={role}
-          onSubmitted={() => setRevision((value) => value + 1)}
+    <Workspace admin route={route}>
+      <div
+        hidden={Boolean(role) && route !== "/account"}
+        className="account-view"
+      >
+        <PageHeading
+          title={role ? "Your account" : "Administration sign-in"}
+          description="Manage your account and public contributor profile."
         />
-        <h1>Catalog operations.</h1>
-        <p>
-          The administration application has its own entry point and build.
-          Access to administrative data is enforced by the API.
-        </p>
-        <h2>Connection</h2>
-        <p role={error ? "alert" : undefined}>
-          {error ||
-            (health
-              ? "API connected. Administrative permission is verified when you sign in."
-              : "Connecting to the API…")}
-        </p>
-        <h2>Publication identity</h2>
-        <p>
-          An authenticated Super Admin can choose Official asset, Created by
-          KnownGDB or Personal. The uploader remains recorded independently.
-          Personal community credit requires a registered contributor profile.
-        </p>
-        <h2>Asset history</h2>
-        <p>
-          Language, season, event and validity belong to version metadata.
-          Publishing a new cover or logo must preserve earlier originals and
-          their history.
-        </p>
-        {role ? (
-          <VersionAdministration key={revision} role={role} />
-        ) : (
-          <p>
-            Sign in with administrative permission to review asset versions.
-          </p>
-        )}
-      </main>
-    </>
+        <section className="surface">
+          <Account admin onRoleChange={setRole} />
+        </section>
+      </div>
+      {role && route !== "/account" ? (
+        <>
+          {route === "/games/new" ? (
+            <>
+              <PageHeading
+                title="Add a game"
+                description="Create its canonical record first. Add detailed information in the game editor."
+                back="#/games"
+              />
+              <div className="surface narrow">
+                <GameCreation
+                  onCreated={(id) => {
+                    changed();
+                    window.location.hash = `/games/${id}`;
+                  }}
+                />
+              </div>
+            </>
+          ) : parts[1] === "games" ? (
+            <GamesView
+              role={role}
+              revision={revision}
+              onChanged={changed}
+              gameId={parts[2]}
+              visibility={parts[3] === "visibility"}
+              onDirtyChange={setDirty}
+            />
+          ) : route === "/uploads" ? (
+            <>
+              <PageHeading
+                title="Upload assets"
+                description="Choose a game, describe the original and submit it for review."
+              />
+              <section className="surface narrow">
+                <AssetSubmission
+                  onDirtyChange={setDirty}
+                  standalone
+                  role={role}
+                  catalogRevision={revision}
+                  onSubmitted={changed}
+                />
+              </section>
+            </>
+          ) : route === "/moderation" ? (
+            <>
+              <PageHeading
+                title="Moderation"
+                description="Inspect one asset at a time. Review and publication remain separate actions."
+              />
+              <VersionAdministration role={role} />
+            </>
+          ) : route === "/stores" ? (
+            <StoreObservations role={role} />
+          ) : (
+            <PageHeading title="Page not found" back="#/games" />
+          )}
+        </>
+      ) : null}
+    </Workspace>
   );
 }
 createRoot(document.getElementById("root")!).render(<App />);

@@ -111,6 +111,30 @@ async function fixture() {
 const publicUrl = `http://localhost/api/v1/games/${game}/asset-versions`;
 const adminUrl = "http://localhost/api/v1/admin/asset-versions";
 const writeUrl = `${adminUrl}/${version}/publication`;
+test("administrators see actionable publication blockers without exposing private rights evidence", async () => {
+  const f = await fixture();
+  try {
+    f.state.rows[1].asset_collections.games.status = "draft";
+    const response = await handleRequest(
+      new Request(adminUrl, { headers: { authorization } }),
+      f.env,
+    );
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.versions[1].canPublish, false);
+    assert.deepEqual(body.versions[1].publicationBlockers, [
+      "The game is draft. Publish it in Manage games first.",
+    ]);
+    assert.ok(!JSON.stringify(body).includes("Private licensing evidence"));
+    const publicResponse = await handleRequest(new Request(publicUrl), f.env);
+    const publicBody = await publicResponse.json();
+    assert.equal(publicBody.versions.length, 1);
+    assert.equal(publicBody.versions[0].publicationBlockers, undefined);
+    assert.equal(f.state.writes.length, 0);
+  } finally {
+    await f.close();
+  }
+});
 test("publication rejects oversized streaming input before consuming the full body", async () => {
   const f = await fixture();
   let chunks = 0;

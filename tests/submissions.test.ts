@@ -1,3 +1,5 @@
+import { once } from "node:events";
+import { createApiServer } from "../apps/api/src/node-adapter.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
@@ -33,8 +35,29 @@ const metadata = {
   source_reference: "Contributor source",
   rights_reference: "Distribution permission",
 };
-async function fixture() {
+async function fixture(original = png) {
+  const reservedMetadata = {
+    ...metadata,
+    byte_size: original.length,
+    checksum_sha256: createHash("sha256").update(original).digest("hex"),
+  };
   const state = {
+    role: "moderator",
+    duplicate: false,
+    catalog: [] as {
+      id: string;
+      status: string;
+      updated_at?: string;
+      localizations: {
+        title: string;
+        language: string;
+        is_primary: boolean;
+        source_reference?: string;
+        moderation_status?: string;
+        confidence?: number;
+        description?: string;
+      }[];
+    }[],
     storageWrites: 0,
     reads: 0,
     completed: 0,
@@ -63,15 +86,38 @@ async function fixture() {
     if (url.pathname === "/auth/v1/user")
       return send({ id: actor, email_confirmed_at: "2026-01-01T00:00:00Z" });
     if (url.pathname.endsWith("/admin_members"))
-      return send([{ role: "moderator" }]);
+      return send([{ role: state.role }]);
     if (url.pathname.endsWith("/rpc/admin_check")) return send(state.active);
+    if (url.pathname.endsWith("/rpc/submission_game_check"))
+      return send(state.active);
     if (url.pathname.endsWith("/rpc/submission_check"))
       return send(state.active);
+    if (url.pathname.endsWith("/rpc/admin_catalog")) return send(state.catalog);
     if (url.pathname.includes("/rpc/")) {
       let raw = "";
       for await (const c of req) raw += c;
       const d = JSON.parse(raw);
       state.calls.push(d);
+      if (url.pathname.endsWith("/rpc/admin_save_game")) return send(d.p_game);
+      if (url.pathname.endsWith("/rpc/create_game_draft")) {
+        if (state.duplicate)
+          return send(
+            { code: "23505", message: "private duplicate details" },
+            409,
+          );
+        state.catalog.push({
+          id: game,
+          status: "draft",
+          localizations: [
+            {
+              title: d.p_data.title,
+              language: d.p_data.language,
+              is_primary: true,
+            },
+          ],
+        });
+        return send(game);
+      }
       if (url.pathname.endsWith("complete_asset_submission")) {
         state.completed++;
         return send({ versionId: id });
@@ -84,7 +130,7 @@ async function fixture() {
         state.found
           ? {
               id,
-              metadata,
+              metadata: reservedMetadata,
               object_key: key,
               created_at: "2026-10-22T00:00:00Z",
               expires_at: "2099-01-01T00:00:00Z",
@@ -102,7 +148,7 @@ async function fixture() {
       assert.equal(req.headers["if-none-match"], "*");
       let bytes = Buffer.alloc(0);
       for await (const c of req) bytes = Buffer.concat([bytes, c]);
-      assert.deepEqual(bytes, png);
+      assert.deepEqual(bytes, original);
       state.storageWrites++;
       if (state.storageWrites > 1) {
         res.writeHead(412, { "Content-Type": "application/xml" });
@@ -115,7 +161,7 @@ async function fixture() {
     }
     if (req.method === "GET" && url.pathname.startsWith("/bucket/")) {
       state.reads++;
-      const body = state.corrupt ? Buffer.alloc(png.length) : png;
+      const body = state.corrupt ? Buffer.alloc(original.length) : original;
       res.writeHead(200, {
         "Content-Type": "image/png",
         "Content-Length": body.length,
@@ -168,6 +214,147 @@ const request = (
     },
     ...(method !== "GET" ? { body } : {}),
   });
+
+test("administrative game intake creates only drafts, rejects mass assignment and exposes draft choices only to administrators", async () => {
+  const f = await fixture();
+  const gameRequest = (body: unknown) =>
+    new Request("http://localhost/api/v1/admin/games", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+  const data = {
+    title: " New canonical game ",
+    language: "es-UY",
+    source_reference: "Verified game source",
+    description: "Draft description",
+  };
+  try {
+    assert.equal(
+      (
+        await handleRequest(
+          new Request("http://localhost/api/v1/admin/games"),
+          f.env,
+        )
+      ).status,
+      401,
+    );
+    assert.equal(
+      (
+        await handleRequest(
+          gameRequest({ ...data, status: "published", approved: true }),
+          f.env,
+        )
+      ).status,
+      400,
+    );
+    const created = await handleRequest(gameRequest(data), f.env);
+    assert.equal(created.status, 201);
+    const result = await created.json();
+    assert.equal(result.game.status, "draft");
+    assert.equal(result.game.title, "New canonical game");
+    assert.equal(result.game.language, "es-uy");
+    assert.equal(f.state.calls[0].p_actor, actor);
+    assert.equal(
+      (f.state.calls[0].p_data as Record<string, unknown>).status,
+      undefined,
+    );
+    const choices = await handleRequest(
+      new Request("http://localhost/api/v1/admin/games", {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+      f.env,
+    );
+    assert.equal((await choices.json()).games[0].status, "draft");
+    f.state.duplicate = true;
+    const duplicate = await handleRequest(gameRequest(data), f.env);
+    assert.equal(duplicate.status, 409);
+    assert.ok(!(await duplicate.text()).includes("private duplicate details"));
+    f.state.active = false;
+    assert.equal((await handleRequest(gameRequest(data), f.env)).status, 401);
+  } finally {
+    await f.close();
+  }
+});
+test("game lifecycle requires Super Admin, rejects stale changes and preserves catalog evidence", async () => {
+  const f = await fixture();
+  const updated = "2026-10-22T00:00:00+00:00";
+  f.state.catalog.push({
+    id: game,
+    status: "draft",
+    updated_at: updated,
+    localizations: [
+      {
+        title: "Reviewed fixture",
+        language: "en",
+        is_primary: true,
+        source_reference: "Verified source",
+        confidence: 0.8,
+        description: "Preserved description",
+        moderation_status: "in_review",
+      },
+    ],
+  });
+  const change = (body: object, origin = "http://localhost") =>
+    handleRequest(
+      new Request("http://localhost/api/v1/admin/games", {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Origin: origin,
+        },
+        body: JSON.stringify({
+          id: game,
+          expectedUpdatedAt: updated,
+          status: "published",
+          ...body,
+        }),
+      }),
+      f.env,
+    );
+  try {
+    assert.equal((await change({})).status, 403);
+    f.state.role = "super_admin";
+    assert.equal((await change({}, "https://other.example")).status, 403);
+    assert.equal(
+      (await change({ expectedUpdatedAt: "2026-10-21T00:00:00Z" })).status,
+      409,
+    );
+    assert.equal((await change({ status: "deleted" })).status, 400);
+    assert.equal(
+      (await change({ title: "Untrusted replacement" })).status,
+      400,
+    );
+    assert.equal(f.state.calls.length, 0);
+    assert.equal((await change({})).status, 200);
+    const call = f.state.calls.at(-1)!;
+    assert.equal(call.p_expected, updated);
+    assert.deepEqual(call.p_data, {
+      title: "Reviewed fixture",
+      language: "en",
+      source_reference: "Verified source",
+      confidence: 0.8,
+      description: "Preserved description",
+      is_primary: true,
+      approved: true,
+      status: "published",
+    });
+    assert.equal((await change({ status: "withdrawn" })).status, 200);
+    assert.equal(
+      (f.state.calls.at(-1)!.p_data as Record<string, unknown>).status,
+      "withdrawn",
+    );
+    f.state.active = false;
+    assert.equal((await change({})).status, 401);
+  } finally {
+    await f.close();
+  }
+});
+
 test("submission validation rejects mass assignment, unsafe language/media and image framing/dimension bounds", () => {
   assert.doesNotThrow(() => validateImage(png, "png"));
   assert.equal(
@@ -361,6 +548,68 @@ test("original upload rejects mismatched media and stops oversized streams befor
     ico.writeUInt32LE(ico.length + 1, 18);
     assert.throws(() => validateImage(ico, "ico"));
   } finally {
+    await f.close();
+  }
+});
+
+test("a full 4 MiB original passes metadata, local HTTP transport and verified storage completion", async () => {
+  const payload = Buffer.alloc(uploadLimit - png.length - 12, 120);
+  payload.write("Comment\0");
+  const type = Buffer.from("tEXt");
+  const table = Array.from({ length: 256 }, (_, n) => {
+    for (let bit = 0; bit < 8; bit++)
+      n = n & 1 ? 0xedb88320 ^ (n >>> 1) : n >>> 1;
+    return n >>> 0;
+  });
+  let crc = 0xffffffff;
+  for (const byte of Buffer.concat([type, payload]))
+    crc = table[(crc ^ byte) & 255] ^ (crc >>> 8);
+  const length = Buffer.alloc(4),
+    checksum = Buffer.alloc(4);
+  length.writeUInt32BE(payload.length);
+  checksum.writeUInt32BE((crc ^ 0xffffffff) >>> 0);
+  const original = Buffer.concat([
+    png.subarray(0, -12),
+    length,
+    type,
+    payload,
+    checksum,
+    png.subarray(-12),
+  ]);
+  assert.equal(original.length, 4 * 1024 * 1024);
+  assert.doesNotThrow(() => validateImage(original, "png"));
+  assert.doesNotThrow(() =>
+    validateSubmission({ ...metadata, byte_size: original.length }),
+  );
+  assert.throws(() =>
+    validateImage(Buffer.concat([original, Buffer.from([0])]), "png"),
+  );
+  const f = await fixture(original);
+  const server = createApiServer(f.env, (request, env) =>
+    submissionRequest(request, env ?? f.env, f.storage),
+  );
+  try {
+    server.listen(0, "127.0.0.1");
+    await once(server, "listening");
+    const address = server.address();
+    assert.ok(address && typeof address !== "string");
+    const response = await fetch(
+      `http://127.0.0.1:${address.port}/api/v1/submissions/${id}/original`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "image/png",
+        },
+        body: original,
+      },
+    );
+    assert.equal(response.status, 200);
+    assert.equal(f.state.completed, 1);
+    assert.equal(f.state.storageWrites, 1);
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
     await f.close();
   }
 });

@@ -29,7 +29,7 @@ verified; unchecked items remain planned. This is not a production-ready MVP.
 
 - [x] Inspect existing Supabase schema, migrations, Auth, RLS and permissions.
 - [x] Recover the six earlier schema migrations and verify their provenance.
-- [x] Replay all ten local migrations (nine currently applied remotely) and verify guards/RLS in disposable PostgreSQL.
+- [x] Replay all twelve local migrations (all twelve applied remotely) and verify guards/RLS in disposable PostgreSQL.
 - [x] Configure private local API access to the existing Supabase catalog.
 - [x] Complete isolated database startup using the official CLI and reviewed baseline.
 - [x] Shared local TypeScript API and Netlify Functions testing adapter.
@@ -73,7 +73,7 @@ verified; unchecked items remain planned. This is not a production-ready MVP.
 - [x] Contributor public names and immutable asset history/credit schema.
 - [ ] Administrative operation auditing and complete publication/moderation workflows.
   Image submission/revision and explicit review/approve/reject are implemented and
-  tested locally; hosted migration, authorized writes and real-service acceptance
+  tested locally; migration is applied, while authorized writes and real-service acceptance
   remain pending. See [acceptance](docs/ASSET-SUBMISSION-ACCEPTANCE.md).
 - Catalog, translations, releases, identity, assets and moderation.
 - Real forms and operations with validation and feedback.

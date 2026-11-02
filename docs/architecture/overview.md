@@ -9,6 +9,11 @@ explicit Super Admin publication are implemented; see
 
 ## Workspace structure
 
+Web and admin now use [dedicated task views](../adr/0013-task-oriented-workspaces.md)
+instead of rendering every form simultaneously. The game editor preserves one
+draft across its sections; game visibility and asset moderation remain separate
+actions using the existing API.
+
 ```text
 apps/
   web/             React + Vite: public experience
@@ -63,12 +68,29 @@ checking access and publication status.
 
 ## Domain
 
-- Game: stable internal ID; names and providers do not define identity.
+- Catalog item: immutable internal ID; names and providers do not define identity.
+  Item types include game, demo, playtest, DLC, expansion, remake, remaster,
+  edition, bundle, season pass and soundtrack. Related products keep their own
+  IDs and are connected by reviewed directed relations.
 - GameLocalization: titles, aliases and descriptions by language.
 - Release: platform, edition, region and date with explicit precision.
 - Organization and Genre: independent entities with relationships and translations.
 - ExternalIdentity and IdentityDecision: source, evidence, confidence, review and
   result; matching names alone do not justify merging games.
+- StoreListing and StoreOffer: storefront page, edition or purchasable offer
+  attached to the correct catalog item and release; a store ID never replaces
+  the KnownGDB identity.
+- Official store connectors construct provider URLs server-side and preserve
+  Store ID, Xbox Title ID, service configuration ID and other namespaces as
+  separate reviewed external identities.
+- Epic Store slugs, namespaces, catalog item IDs and offer IDs are likewise
+  separate provider identities; missing page evidence is not inferred.
+- EA publisher series and game slugs remain separate from EA product codes,
+  account identifiers and any future app catalog namespace.
+- Ubisoft regional Store slugs, product IDs and SKUs remain separate identities;
+  activation keys and account values are never used as catalog identity.
+- PlayStation Concept IDs and regional Product IDs remain separate identities;
+  editions, DLC and bundles require their own reviewed product observations.
 - Assets: immutable file, editorial piece and assignment are separate concepts.
   Assignments specify Game or Release, role, languages, region, context and validity.
 - Moderation, publication and validity are independent states.

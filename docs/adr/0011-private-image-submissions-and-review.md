@@ -1,6 +1,6 @@
 # ADR 0011: Private image submissions and explicit review
 
-Status: implemented and tested locally; hosted migration and acceptance pending.
+Status: implemented and tested locally; hosted migration applied; real upload acceptance pending.
 
 Tracking: [issue 39](https://github.com/KnownXDB/KnownGDB/issues/39).
 
@@ -18,10 +18,12 @@ Language, season/event and validity belong to the new version. New revisions may
 target only the uploader's existing collection with matching game, role and credit.
 The database serializes revision assignment and enforces ownership again on insert.
 
-The first transport accepts PNG, JPEG and client ICO images up to 2 MiB. Metadata
+The first transport accepts PNG, JPEG and client ICO images up to 4 MiB. Metadata
 uses the existing 4 KiB JSON limit; the original uses a separate bounded PUT body.
-The lower upload limit accommodates hosted request buffering without changing the
-existing 16 MiB original-delivery limit. Video/preserved trailers and larger-file
+The local/API limit does not change the existing 16 MiB original-delivery limit.
+Four MiB leaves margin below Netlify's effective approximately 4.5 MB binary
+request bound, including Base64 overhead. See [Netlify request limits](https://docs.netlify.com/build/functions/configuration/).
+Video/preserved trailers and larger-file
 transport remain planned; their existing roles/extensions are preserved.
 
 Validate metadata, file framing, dimensions, exact byte size and SHA-256 before
@@ -60,7 +62,7 @@ events; stale or published versions reject review changes.
 
 ## Database and service boundaries
 
-Migration `20261022010000_asset_submissions.sql` is additive and pending remotely.
+Migration `20261023002315_asset_submissions.sql` is additive and applied remotely.
 It adds one RLS-enabled service-only table and restricted transactions. Browser
 roles cannot execute the reservation, completion or review functions. The small
 session-check function uses a fixed search path and restricted definer access to
@@ -68,15 +70,16 @@ Auth tables, avoiding additional Auth table grants to the service caller. Other
 transactions use invoker security. See [Supabase function security](https://supabase.com/docs/guides/database/functions)
 and [R2 S3 compatibility](https://developers.cloudflare.com/r2/api/s3/api/).
 
-No remote migration, hosted write, deployment or asset publication is part of local
-implementation. Existing hosted browsing/delivery remains on the accepted build.
+The additive migration was subsequently authorized and applied; existing catalog
+row digests were unchanged. Real submission writes, deployment and asset publication
+were not included in that migration. Existing hosted browsing/delivery remains on the accepted build.
 Use the [acceptance runbook](../ASSET-SUBMISSION-ACCEPTANCE.md) before real writes.
 
 ## Local evidence and limits
 
 API tests exercise identity, CSRF, metadata, ownership filtering, media bounds,
 create-only HTTP writes, read-back integrity, retries and moderation dispatch.
-Disposable PostgreSQL replays ten migrations and verifies contributor credit,
+Disposable PostgreSQL replays twelve migrations and verifies contributor credit,
 active sessions, ownership, immutable reservations, revisions, quotas, expiry,
 idempotent completion, audit events, stale transitions and denied browser roles.
 Auth tables in that runner are a contract fixture, not a full Auth installation.
@@ -87,3 +90,15 @@ explicit review/approval without publication. Browser API responses are controll
 these checks are not real hosted submission acceptance. Browser plugin access was
 unavailable. No production security certification is claimed; MFA, full codec
 processing, broader abuse controls and video remain separate work.
+
+## Game intake
+
+Administrators can create a canonical game draft from the admin interface with
+a title, canonical language, source reference and optional description. The
+transaction reuses the existing catalog writer and audit trail, forces Draft
+and unreviewed localization state, and checks normalized title/language matches
+under a title lock. A match requests manual review; no automatic identity merge
+is performed. Administrative game choices include drafts; public choices remain
+published-only. Draft upload eligibility is rechecked before storage and at
+completion; inactive administrators and withdrawn games cannot accept new writes.
+Creating a game does not publish its title or assets.

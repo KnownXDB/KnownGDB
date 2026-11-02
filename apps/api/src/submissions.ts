@@ -1,14 +1,14 @@
 import { createHash } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { assetRoles } from "@knowngdb/contracts";
+import { assetRoles, imageUploadLimit } from "@knowngdb/contracts";
 import { languageScope, objectKey } from "./asset-policy.ts";
 import { readJsonObject } from "./request-body.ts";
 import { readOriginal } from "./asset-delivery.ts";
 import { verifyAdmin } from "./admin-access.ts";
 import type { ApiEnvironment } from "./handler.ts";
 
-export const uploadLimit = 2 * 1024 * 1024;
+export const uploadLimit = imageUploadLimit;
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export const isSubmissionRoute = (path: string) =>
@@ -374,6 +374,17 @@ export async function submissionRequest(
     if (Date.parse(intent.expires_at) <= Date.now() && !intent.version_id)
       return reply({ error: "Submission expired." }, 409);
     const d = validateSubmission(intent.metadata);
+    const gameAccess = await client.rpc("submission_game_check", {
+      p_actor: actor,
+      p_game: d.game_id,
+    });
+    if (gameAccess.error)
+      return reply({ error: "Game authorization unavailable." }, 503);
+    if (gameAccess.data !== true)
+      return reply(
+        { error: "Permission to upload for this game is required." },
+        403,
+      );
     const expected = objectKey({
       gameId: String(d.game_id),
       versionId: id,
