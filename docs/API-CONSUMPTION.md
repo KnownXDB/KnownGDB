@@ -74,6 +74,10 @@ anonymous key-route denial and database key issue/consume/revoke passed. The
 database verification used a rolled-back transaction and retained no test keys.
 Real email confirmation and signed-in browser acceptance remain pending.
 
+Deployment `6ae91227585ff32144934395` adds configurable expiration on 2026-11-02.
+The additive migration preserves existing dates. Hosted transactional verification
+covered indefinite keys, owner expiration updates, consumption and revocation.
+
 Apply the additive `account_api_keys` migration to other environments only
 with explicit authorization. Configure private Supabase credentials, session
 encryption, email delivery and permitted Auth redirect URLs. Run `npm run check`.

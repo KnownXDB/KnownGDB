@@ -35,6 +35,12 @@
   ],
   "applied": [
     {
+      "version": "20261102224328",
+      "name": "configurable_api_key_expiration",
+      "sha256": "514cd079ff613aa06face9e94153eb4085efc52cd642228bd4f678e1a28edfe8",
+      "note": "Authorized continuation of live API key acceptance. Existing expiration dates preserved; nullable expiration and owner-scoped updates added. Hosted transactional create/update/consume/revoke verification passed without retaining test keys."
+    },
+    {
       "version": "20261102223130",
       "name": "account_api_keys",
       "sha256": "b3c4f12c54d9a70b4fd14a618a7caaa9b3fa5e62dba106781bbf6596500bf9bb",
