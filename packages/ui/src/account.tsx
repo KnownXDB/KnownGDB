@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Recovery, startsInRecovery } from "./recovery.tsx";
+import { ApiKeys } from "./api-keys.tsx";
 export { startsInRecovery } from "./recovery.tsx";
 import type { AdminRole } from "@knowngdb/contracts";
 
@@ -271,6 +272,7 @@ export function Account({
             <p>This name is public. Choose how you want to be credited.</p>
             <button disabled={busy}>Save public profile</button>
           </form>
+          <ApiKeys />
           <button onClick={logout} disabled={busy}>
             Sign out
           </button>

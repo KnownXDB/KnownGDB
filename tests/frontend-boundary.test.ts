@@ -41,7 +41,13 @@ for (const app of ["web", "admin"]) {
       assert.ok(!(await denied.text()).includes("private marker"));
     } finally {
       await server.close();
-      await rm(fixture, { recursive: true, force: true });
+      // Dependency optimization can finish a pending cache write during close.
+      await rm(fixture, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 100,
+      });
     }
   });
 }

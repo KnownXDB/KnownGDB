@@ -73,7 +73,7 @@ const migrationFiles = fs
   .readdirSync("supabase/migrations")
   .filter((name) => name.endsWith(".sql"))
   .sort();
-assert.equal(migrationFiles.length, 22);
+assert.equal(migrationFiles.length, 24);
 const sql = migrationFiles.map((file) =>
   fs.readFileSync(path.join("supabase/migrations", file), "utf8"),
 );
@@ -119,7 +119,7 @@ try {
   const tables = await fresh.query(
     "select relname,relrowsecurity from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='catalog' and c.relkind='r'",
   );
-  assert.equal(tables.rows.length, 25);
+  assert.equal(tables.rows.length, 26);
   assert.ok(tables.rows.every((row) => row.relrowsecurity));
   for (const role of ["anon", "authenticated"]) {
     assert.equal(
@@ -147,6 +147,12 @@ try {
     seedUser +
       "update catalog.admin_members set role='super_admin'; insert into catalog.games default values;",
   );
+  await fresh.query("begin");
+  try {
+    await fresh.query(fs.readFileSync("supabase/tests/api-keys.sql", "utf8"));
+  } finally {
+    await fresh.query("rollback");
+  }
   await fresh.query("begin");
   try {
     await fresh.query(
@@ -593,7 +599,7 @@ try {
     (error) => error.code === "P0001",
   );
   console.log(
-    "PASS: twenty-two migrations on disposable PostgreSQL 17; empty/existing/ambiguous admin guards, 25 RLS tables, denied browser roles, transactional import/publication/metadata and store-observation SQL.",
+    "PASS: twenty-four migrations on disposable PostgreSQL 17; empty/existing/ambiguous admin guards, 26 RLS tables, denied browser roles, transactional import/publication/metadata, API keys and store-observation SQL.",
   );
   console.log(
     "Auth tables are a minimal SQL contract fixture; this is not a full Supabase Auth/API stack test.",

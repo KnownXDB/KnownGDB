@@ -35,6 +35,18 @@
   ],
   "applied": [
     {
+      "version": "20261102224328",
+      "name": "configurable_api_key_expiration",
+      "sha256": "514cd079ff613aa06face9e94153eb4085efc52cd642228bd4f678e1a28edfe8",
+      "note": "Authorized continuation of live API key acceptance. Existing expiration dates preserved; nullable expiration and owner-scoped updates added. Hosted transactional create/update/consume/revoke verification passed without retaining test keys."
+    },
+    {
+      "version": "20261102223130",
+      "name": "account_api_keys",
+      "sha256": "b3c4f12c54d9a70b4fd14a618a7caaa9b3fa5e62dba106781bbf6596500bf9bb",
+      "note": "Explicitly authorized hosted activation on 2026-11-02. Supabase assigned this version; local file renamed without content changes. Existing game and asset counts preserved. RLS, denied browser grants, invalid-key denial and transactional issue/consume/revoke verified."
+    },
+    {
       "version": "20261020210124",
       "name": "legacy_asset_import_registry",
       "sha256": "8c1f39a8c02387f25cdf1c8d6d7c46a9cb9432cc95c1edbf2e7f6182aee503f3"

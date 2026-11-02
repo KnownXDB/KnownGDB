@@ -101,6 +101,11 @@ export function Workspace({
             </a>
           ))}
         </nav>
+        {!admin && (
+          <a className="workspace-switch" href="/developers">
+            Developer API
+          </a>
+        )}
         {admin ? (
           <a className="workspace-switch" href={publicCatalogHref}>
             Public catalog

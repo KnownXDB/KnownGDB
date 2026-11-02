@@ -1,4 +1,10 @@
 import { administrativeGames } from "./games.ts";
+import {
+  apiKeysRequest,
+  keyPath,
+  consumerPath,
+  verifyConsumerKey,
+} from "./api-keys.ts";
 import { isMetadataRoute, metadataRequest } from "./game-metadata.ts";
 import { isSubmissionRoute, submissionRequest } from "./submissions.ts";
 import { createClient } from "@supabase/supabase-js";
@@ -57,7 +63,9 @@ export async function handleRequest(
   const requestUrl = new URL(request.url);
   const path = requestUrl.pathname;
   if (
-    (accountPaths.includes(path) ||
+    (path === keyPath ||
+      path === consumerPath ||
+      accountPaths.includes(path) ||
       path.startsWith("/api/v1/admin/") ||
       isSubmissionRoute(path)) &&
     requestUrl.protocol !== "https:" &&
@@ -65,6 +73,7 @@ export async function handleRequest(
   )
     return reply({ error: "HTTPS is required for account access." }, 403);
   if (
+    path === keyPath ||
     [
       "/api/v1/account/profile",
       "/api/v1/account/session",
@@ -88,6 +97,13 @@ async function routeRequest(
   env: ApiEnvironment,
 ): Promise<Response> {
   const url = new URL(request.url);
+  if (url.pathname === keyPath) return apiKeysRequest(request, env);
+  if (url.pathname === consumerPath) {
+    const denied = await verifyConsumerKey(request, env);
+    if (denied) return denied;
+    url.pathname = "/api/v1/games";
+    return routeRequest(new Request(url, request), env);
+  }
   if (isMetadataRoute(url.pathname)) return metadataRequest(request, env);
   if (url.pathname === "/api/v1/admin/games")
     return administrativeGames(request, env);
