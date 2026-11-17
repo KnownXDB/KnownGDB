@@ -280,7 +280,9 @@ export async function deliveryRequest(
       ]);
       const etag = `"derivative-v1-${variant}-${row.checksum_sha256}"`;
       const headers: Record<string, string> = {
-        "Cache-Control": admin ? "private, no-store" : "private, no-cache",
+        "Cache-Control": admin
+          ? "private, no-store"
+          : "private, max-age=300, must-revalidate",
         "X-Content-Type-Options": "nosniff",
         "Content-Security-Policy": "default-src 'none'; sandbox",
         "Cross-Origin-Resource-Policy": "same-origin",

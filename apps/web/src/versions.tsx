@@ -22,6 +22,10 @@ export function PublishedVersions({
   const [category, setCategory] = useState("all");
   const [platforms, setPlatforms] = useState<string[]>([]);
   const request = useRef<AbortController | null>(null);
+  const visibleCount = useRef(0);
+  useEffect(() => {
+    visibleCount.current = versions.length;
+  }, [versions]);
   async function load(after: string | null = null) {
     request.current?.abort();
     const current = new AbortController();
@@ -50,6 +54,41 @@ export function PublishedVersions({
         );
     } finally {
       if (!current.signal.aborted) setBusy(false);
+      if (request.current === current) request.current = null;
+    }
+  }
+  async function refreshVisible() {
+    if (document.visibilityState !== "visible" || request.current) return;
+    const current = new AbortController();
+    request.current = current;
+    try {
+      const refreshed: VersionSummary[] = [];
+      let after: string | null = null;
+      let pages = 0;
+      do {
+        const response = await fetch(
+          `/api/v1/games/${encodeURIComponent(gameId)}/asset-versions${after ? `?cursor=${encodeURIComponent(after)}` : ""}`,
+          { signal: current.signal },
+        );
+        if (!response.ok) throw Error("Published versions are unavailable.");
+        const data: VersionPage = await response.json();
+        refreshed.push(...data.versions);
+        after = data.nextCursor;
+        pages++;
+      } while (after && refreshed.length < visibleCount.current && pages < 50);
+      if (!current.signal.aborted) {
+        setVersions(refreshed);
+        setCursor(after);
+        setError("");
+      }
+    } catch {
+      if (!current.signal.aborted) {
+        setVersions([]);
+        setCursor(null);
+        setError("Published versions are temporarily unavailable.");
+      }
+    } finally {
+      if (request.current === current) request.current = null;
     }
   }
   useEffect(() => {
@@ -57,6 +96,9 @@ export function PublishedVersions({
     setCategory("all");
     setPlatforms([]);
     void load();
+    const timer = window.setInterval(() => void refreshVisible(), 60_000);
+    const refresh = () => void refreshVisible();
+    document.addEventListener("visibilitychange", refresh);
     const controller = new AbortController();
     void fetch(`/api/v1/games/${encodeURIComponent(gameId)}/metadata`, {
       signal: controller.signal,
@@ -86,6 +128,8 @@ export function PublishedVersions({
       })
       .catch(() => {});
     return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refresh);
       request.current?.abort();
       controller.abort();
     };
