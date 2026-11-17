@@ -17,6 +17,21 @@ Start independently with `npm run dev:web`, `npm run dev:admin` and
 `npm run dev:api`. Both Vite applications proxy `/api` to port 8787. Changes use
 HMR; there is no server build prerequisite. Stop the combined process with Ctrl+C.
 
+## Performance audits
+
+With the site running and Chrome installed, create the ignored report directory
+and run Lighthouse against the public site or admin:
+
+```powershell
+New-Item -ItemType Directory -Force .local/lighthouse
+npm run audit:performance:web
+npm run audit:performance:admin
+```
+
+Lighthouse uses its default mobile settings. Open the generated HTML reports to
+review performance findings and prioritize follow-up changes. Keep generated
+reports under `.local/`; they are ignored by Git.
+
 These are executable development workspaces, not the finished premium product.
 The public screen searches published games when the backend is configured. The
 admin screen verifies administrative membership after sign-in. Both applications
