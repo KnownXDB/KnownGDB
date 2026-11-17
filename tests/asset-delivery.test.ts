@@ -418,7 +418,10 @@ test("derivatives are bounded, cached and reauthorized before conditional respon
     const first = await deliveryRequest(new Request(thumbUrl), f.env, read);
     assert.equal(first.status, 200);
     assert.equal(first.headers.get("Content-Type"), "image/webp");
-    assert.equal(first.headers.get("Cache-Control"), "private, no-cache");
+    assert.equal(
+      first.headers.get("Cache-Control"),
+      "private, max-age=300, must-revalidate",
+    );
     const bytes = Buffer.from(await first.arrayBuffer());
     const metadata = await sharp(bytes).metadata();
     assert.equal(metadata.width, 480);
