@@ -18,14 +18,11 @@ const failure = (error: string, status: number) =>
 // Apply the same bound before allocation in local and hosted Fetch adapters.
 export async function readJsonObject(
   request: Request,
+  limit = bodyLimit,
 ): Promise<Record<string, unknown> | Response> {
   if (!isJsonRequest(request)) return failure("JSON body required.", 415);
   const advertised = request.headers.get("Content-Length");
-  if (
-    advertised &&
-    /^\d+$/.test(advertised) &&
-    Number(advertised) > bodyLimit
-  ) {
+  if (advertised && /^\d+$/.test(advertised) && Number(advertised) > limit) {
     await request.body?.cancel().catch(() => {});
     return failure("Request is too large.", 413);
   }
@@ -38,7 +35,7 @@ export async function readJsonObject(
       const chunk = await reader.read();
       if (chunk.done) break;
       size += chunk.value.byteLength;
-      if (size > bodyLimit) {
+      if (size > limit) {
         await reader.cancel().catch(() => {});
         return failure("Request is too large.", 413);
       }

@@ -58,6 +58,12 @@ does not imply permission to redistribute.
 
 ## Administration
 
+The [game metadata model](GAME-METADATA.md) defines complete editor scope,
+release-specific facts and unknown values. Its first editor slice is implemented
+locally with reviewed revisions; its additive migration is applied and real-account
+acceptance remains pending. Draft intake
+remains a separate short form.
+
 Manage information, translations, organizations, genres, releases, sources,
 assets and decisions. Audit merges and corrections. Separate catalog, moderation
 and access permissions. Record author, date and reason for sensitive changes.

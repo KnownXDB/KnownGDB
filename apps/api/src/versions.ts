@@ -236,7 +236,32 @@ export async function versionRequest(
           Boolean(row.storage_verified_at) &&
           Boolean(row.rights_reference?.trim()) &&
           Date.parse(row.created_at) <= Date.now(),
-        ...(admin ? { changeReason: row.change_reason } : {}),
+        ...(admin
+          ? {
+              changeReason: row.change_reason,
+              publicationBlockers: [
+                ...(collection.games.status !== "published"
+                  ? [
+                      `The game is ${collection.games.status}. Publish it in Manage games first.`,
+                    ]
+                  : []),
+                ...(row.moderation_status !== "approved"
+                  ? [
+                      `Asset review is ${row.moderation_status}. An approved review is required.`,
+                    ]
+                  : []),
+                ...(!row.storage_verified_at
+                  ? ["Original storage has not been verified."]
+                  : []),
+                ...(!row.rights_reference?.trim()
+                  ? ["Distribution rights evidence is missing."]
+                  : []),
+                ...(!(Date.parse(row.created_at) <= Date.now())
+                  ? ["The version creation date is in the future or invalid."]
+                  : []),
+              ],
+            }
+          : {}),
       };
     });
     // Rights references themselves remain private; fail closed on malformed legacy data.

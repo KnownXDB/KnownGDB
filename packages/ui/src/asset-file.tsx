@@ -1,18 +1,24 @@
 import { useEffect, useRef, useState } from "react";
+import { Download } from "lucide-react";
 
 export function AssetFile({
   versionId,
   label,
   admin = false,
   available,
+  initialPreview = false,
+  fixedPreview = false,
 }: {
   versionId: string;
   label: string;
   admin?: boolean;
   available: boolean;
+  initialPreview?: boolean;
+  fixedPreview?: boolean;
 }) {
-  const [preview, setPreview] = useState(false);
+  const [preview, setPreview] = useState(initialPreview);
   const [failedPreview, setFailedPreview] = useState(false);
+  const [loadedPreview, setLoadedPreview] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const request = useRef<AbortController | null>(null);
@@ -81,18 +87,32 @@ export function AssetFile({
   return (
     <div className="asset-file">
       <div className="asset-file-actions">
+        {!fixedPreview && (
+          <button
+            type="button"
+            aria-expanded={preview}
+            onClick={() => {
+              setFailedPreview(false);
+              setPreview((value) => !value);
+            }}
+          >
+            {preview ? "Hide preview" : "Show preview"}
+          </button>
+        )}
         <button
           type="button"
-          aria-expanded={preview}
-          onClick={() => {
-            setFailedPreview(false);
-            setPreview((value) => !value);
-          }}
+          disabled={busy}
+          onClick={() => void download()}
+          aria-label={`Download ${label} original`}
+          title="Download original"
         >
-          {preview ? "Hide preview" : "Show preview"}
-        </button>
-        <button type="button" disabled={busy} onClick={() => void download()}>
-          {busy ? "Downloading…" : "Download original"}
+          {fixedPreview ? (
+            <Download size={17} aria-hidden="true" />
+          ) : busy ? (
+            "Downloading…"
+          ) : (
+            "Download original"
+          )}
         </button>
       </div>
       {preview ? (
@@ -102,11 +122,12 @@ export function AssetFile({
           </p>
         ) : (
           <img
-            className="asset-preview"
-            src={`${base}/preview`}
+            className={`asset-preview ${loadedPreview ? "" : "is-loading"}`}
+            src={`${base}/display`}
             alt={`${label} preview`}
             loading="lazy"
             decoding="async"
+            onLoad={() => setLoadedPreview(true)}
             onError={() => setFailedPreview(true)}
           />
         )

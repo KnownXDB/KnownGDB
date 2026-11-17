@@ -16,6 +16,7 @@ for (const app of ["web", "admin"]) {
     await writeFile(path.join(fixture, "allowed.txt"), "public marker");
     const server = await createServer({
       configFile: path.resolve(`apps/${app}/vite.config.ts`),
+      cacheDir: path.join(fixture, "vite-cache"),
       logLevel: "silent",
       server: {
         port: 0,
@@ -27,6 +28,13 @@ for (const app of ["web", "admin"]) {
       await server.listen();
       const address = server.httpServer!.address();
       assert.ok(address && typeof address !== "string");
+      const deepLink =
+        app === "admin"
+          ? "/admin/games/example/visibility"
+          : "/games/example/en";
+      const page = await fetch(`http://127.0.0.1:${address.port}${deepLink}`);
+      assert.equal(page.status, 200);
+      assert.match(await page.text(), /<div id="root"><\/div>/);
       const base = `http://127.0.0.1:${address.port}${app === "admin" ? "/admin" : ""}/@fs/`;
       const allowed = await fetch(
         base + path.join(fixture, "allowed.txt").replaceAll("\\", "/"),
@@ -40,7 +48,13 @@ for (const app of ["web", "admin"]) {
       assert.ok(!(await denied.text()).includes("private marker"));
     } finally {
       await server.close();
-      await rm(fixture, { recursive: true, force: true });
+      // Dependency optimization can finish a pending cache write during close.
+      await rm(fixture, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 100,
+      });
     }
   });
 }

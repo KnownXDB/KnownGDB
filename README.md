@@ -14,9 +14,11 @@ Super Admin publication/withdrawal with audit reasons are implemented. See
 [publication boundaries](docs/adr/0009-explicit-version-publication.md).
 Local image previews and original downloads use verified private R2 reads through
 the API; see [delivery boundaries](docs/adr/0010-verified-original-image-delivery.md)
-for formats, limits and acceptance scope. Hosted delivery is not deployed yet.
-Upload/moderation forms and premium product
-interfaces are not implemented yet. This is not the complete MVP.
+for formats, limits and acceptance scope. Hosted read-only delivery was accepted
+on 2026-10-21. Image submission/revision forms and explicit moderation are now
+implemented locally; their additive migration is applied and real-service acceptance remains
+pending. See [submission acceptance](docs/ASSET-SUBMISSION-ACCEPTANCE.md). Premium
+product interfaces and video transport remain planned. This is not the complete MVP.
 
 The existing Supabase database and private Cloudflare R2 bucket remain in place.
 An additive history/credit migration preserves the existing game and six legacy
@@ -30,6 +32,15 @@ Earlier schema migrations are recovered
 for local replay; never replay them against or reset the existing remote database.
 
 ## Local development
+
+The MVP UI now separates catalog browsing, game editing, uploads, moderation and
+account management into [dedicated views](docs/adr/0013-task-oriented-workspaces.md).
+Open a game from the admin list to edit one metadata section at a time.
+
+The local admin also includes a [reviewed game metadata editor](docs/adr/0012-reviewed-game-metadata.md)
+for descriptions, companies, releases, languages and classification. Its additive
+migration is applied; real-account editor acceptance remains pending. Existing
+game and asset data was preserved during activation.
 
 With Node.js 22.12+ installed, run `npm ci --ignore-scripts`, then `npm run dev`.
 Web runs at `http://127.0.0.1:5173/`, admin at
@@ -71,9 +82,21 @@ consumers, distribution channels and external identifiers.
 
 ## Documentation
 
+- [Accounts and API consumption keys](docs/API-CONSUMPTION.md)
+
 - [External Netlify testing](docs/NETLIFY-TESTING.md)
 - [Roadmap](ROADMAP.md)
 - [Architecture](docs/architecture/overview.md)
+- [Canonical catalog items and related products](docs/adr/0014-canonical-catalog-items-and-related-products.md)
+- [Store listings and external identities](docs/adr/0015-store-listings-and-external-identities.md)
+- [Steam official page connector](docs/adr/0016-steam-official-page-connector.md)
+- [Xbox and Microsoft Store official page connector](docs/adr/0017-xbox-official-page-connector.md)
+- [Epic Games Store official page connector](docs/adr/0018-epic-official-page-connector.md)
+- [EA official publisher page connector](docs/adr/0019-ea-official-page-connector.md)
+- [Ubisoft Store official page connector](docs/adr/0020-ubisoft-official-page-connector.md)
+- [PlayStation Store official page connector](docs/adr/0021-playstation-store-connector.md)
+- [PlayStation Store live acceptance](docs/PLAYSTATION-STORE-ACCEPTANCE.md)
+- [Interface controls and feedback](docs/UI-CONTROLS.md)
 - [Local workflow](docs/LOCAL-DEVELOPMENT.md)
 - [Product policies](docs/PRODUCT-PLAN.md)
 - [Architecture decision](docs/adr/0001-local-first-foundations.md)

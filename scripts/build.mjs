@@ -29,6 +29,7 @@ await build({
   outfile: "dist/functions/api.mjs",
   bundle: true,
   platform: "node",
+  external: ["sharp"],
   format: "esm",
   target: "node22",
   banner: {

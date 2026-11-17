@@ -1,0 +1,246 @@
+/* Administrative workspace shares the public catalog's dark surface palette. */
+.is-admin {
+  --surface: var(--palette-1c2030);
+  --line: var(--palette-363b50);
+  --muted: var(--palette-b4bbce);
+  --accent: var(--palette-ad8cff);
+  color: var(--palette-f4f5fb);
+  background: var(--palette-10121c);
+  color-scheme: dark;
+}
+.is-admin .workspace-nav {
+  background: var(--palette-151722);
+  border-color: var(--palette-35384a);
+}
+.is-admin .wordmark {
+  color: var(--palette-f4f5fb);
+}
+.is-admin .workspace-nav nav a {
+  color: var(--palette-c7cbe0);
+}
+.is-admin .workspace-nav nav a:hover {
+  background: var(--palette-29243d);
+  color: var(--palette-fff);
+}
+.is-admin .workspace-nav nav a[aria-current="page"] {
+  background: var(--palette-483769);
+  color: var(--palette-fff);
+}
+.is-admin .workspace-switch,
+.is-admin .back-link {
+  color: var(--palette-c5cde0);
+}
+.is-admin p,
+.is-admin small,
+.is-admin dt {
+  color: var(--palette-b4bbce);
+}
+.is-admin label {
+  color: var(--palette-d5daea);
+}
+.is-admin input:not([type="checkbox"]),
+.is-admin textarea,
+.is-admin .custom-select-trigger,
+.is-admin .search-field,
+.is-admin .custom-file {
+  background: var(--palette-151824);
+  color: var(--palette-f4f5fb);
+  border-color: var(--palette-555d75);
+}
+.is-admin .search-field input {
+  background: transparent;
+  border: 0;
+}
+.is-admin input::placeholder,
+.is-admin textarea::placeholder {
+  color: var(--palette-a8b0c3);
+}
+.is-admin .custom-select-menu {
+  background: var(--palette-202437);
+  border-color: var(--palette-555d75);
+}
+.is-admin .custom-select-option {
+  color: var(--palette-f4f5fb);
+}
+.is-admin .custom-select-option:hover,
+.is-admin .custom-select-option[aria-selected="true"] {
+  background: var(--palette-40365e);
+  color: var(--palette-fff);
+}
+.is-admin .game-table-row {
+  color: var(--palette-f4f5fb);
+}
+.is-admin .game-table-row:hover {
+  background: var(--palette-29243d);
+}
+.is-admin .section-tabs a,
+.is-admin .section-tabs button {
+  color: var(--palette-bec5d8);
+}
+.is-admin .section-tabs [aria-current="page"] {
+  color: var(--palette-e1d1ff);
+  border-color: var(--palette-ad8cff);
+}
+.is-admin .metadata-editor details,
+.is-admin .submission-form details {
+  background: var(--palette-222639);
+  border-color: var(--palette-464d62);
+}
+.is-admin .metadata-editor summary {
+  color: var(--palette-d5c5ff);
+}
+.is-admin .secondary,
+.is-admin button.secondary {
+  color: var(--palette-e1d8f2);
+  border-color: var(--palette-555d75);
+  background: var(--palette-24283a);
+}
+.is-admin .status-tag,
+.is-admin .version-status {
+  color: var(--palette-d6daea);
+  border-color: var(--palette-596177);
+}
+.is-admin .status-published,
+.is-admin .version-status.is-published {
+  color: var(--palette-87e2b3);
+  border-color: var(--palette-438363);
+}
+.is-admin .status-draft {
+  color: var(--palette-f2cb7c);
+  border-color: var(--palette-8f7442);
+}
+.is-admin .asset-preview {
+  background: var(--palette-121520);
+  border-color: var(--palette-373d50);
+}
+.is-admin .asset-file-actions button {
+  color: var(--palette-eee6ff);
+  background: var(--palette-49386b);
+}
+.is-admin .asset-file-actions button:hover {
+  color: var(--palette-fff);
+  background: var(--palette-65518e);
+}
+.is-admin .empty-state {
+  border-color: var(--palette-555d75);
+}
+.is-admin .modal-panel {
+  color: var(--palette-171a35);
+  color-scheme: light;
+}
+.is-admin .modal-panel p,
+.is-admin .modal-panel label {
+  color: var(--palette-555d74);
+}
+.is-admin .modal-panel input {
+  background: var(--palette-fff);
+  color: var(--palette-171a35);
+}
+
+.is-admin .game-table-head {
+  background: var(--palette-252a3b);
+  color: var(--palette-c6ccdd);
+}
+.is-admin .status-published,
+.is-admin .version-status.is-published {
+  background: var(--palette-173b30);
+}
+.is-admin .status-draft {
+  background: var(--palette-3e3220);
+}
+.is-admin .loading-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--palette-252a3b),
+    var(--palette-33394c),
+    var(--palette-252a3b)
+  );
+}
+
+.is-admin button {
+  background-color: var(--palette-6651d4);
+  color: var(--palette-fff);
+}
+.is-admin .section-tabs button {
+  background-color: transparent;
+}
+.is-admin .custom-select-option {
+  background-color: transparent;
+  color: var(--palette-f4f5fb);
+}
+.is-admin .custom-select-option:hover,
+.is-admin .custom-select-option[aria-selected="true"] {
+  background-color: var(--palette-40365e);
+}
+.is-admin button.secondary {
+  background-color: var(--palette-24283a);
+  color: var(--palette-e1d8f2);
+}
+
+.is-admin .button:not(.secondary) {
+  background: var(--palette-6651d4);
+  color: var(--palette-fff);
+}
+
+.is-admin .disclosure {
+  background: var(--palette-222639);
+  border-color: var(--palette-464d62);
+}
+.is-admin .disclosure-trigger {
+  background: transparent;
+  color: var(--palette-e6def8);
+}
+.is-admin .disclosure-trigger:hover {
+  background: var(--palette-37304b);
+}
+
+.is-admin .workspace-main .editor-help {
+  background: var(--palette-222639);
+  border: var(--size-1) solid var(--palette-464d62);
+  border-radius: var(--size-8);
+}
+
+.is-admin .editor-actions {
+  background: var(--palette-1c2030f5);
+  border-color: var(--palette-464d62);
+}
+.is-admin .editor-actions > span {
+  color: var(--palette-e9c785);
+}
+
+/* Consistent rhythm for official store observations and their review forms. */
+.store-observations {
+  display: grid;
+  gap: var(--form-section-gap);
+}
+.store-observations > section {
+  min-width: 0;
+  padding: var(--space-24);
+  border: var(--size-1) solid var(--line);
+  border-radius: var(--control-radius);
+  background: var(--surface);
+}
+.store-observations section > p {
+  margin-block: var(--space-8) var(--space-20);
+}
+.store-observations form {
+  display: grid;
+  gap: var(--form-field-gap);
+}
+.store-observations form > button {
+  justify-self: start;
+  margin-top: var(--space-4);
+}
+.store-observations .steam-preview-card {
+  margin-top: var(--form-action-gap);
+  padding-top: var(--form-action-gap);
+  border-top: var(--size-1) solid var(--line);
+}
+.store-observations p[role="status"]:empty {
+  display: none;
+}
+@media (max-width: 800px) {
+  .store-observations > section {
+    padding: var(--space-16);
+  }
+}

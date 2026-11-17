@@ -1,3 +1,13 @@
+import { catalogArtwork } from "./catalog-artwork.ts";
+import { administrativeGames } from "./games.ts";
+import {
+  apiKeysRequest,
+  keyPath,
+  consumerPath,
+  verifyConsumerKey,
+} from "./api-keys.ts";
+import { isMetadataRoute, metadataRequest } from "./game-metadata.ts";
+import { isSubmissionRoute, submissionRequest } from "./submissions.ts";
 import { createClient } from "@supabase/supabase-js";
 import { assetRoles, type GameSummary } from "@knowngdb/contracts";
 import { creditOptions } from "./asset-policy.ts";
@@ -5,6 +15,27 @@ import { accountPaths, accountRequest } from "./account.ts";
 import { withSession } from "./session.ts";
 import { isVersionRoute, versionRequest } from "./versions.ts";
 import { isDeliveryRoute, deliveryRequest } from "./asset-delivery.ts";
+import { isSteamConfirmRoute, isSteamPreviewRoute } from "./steam.ts";
+import { steamConfirmRequest, steamPreviewRequest } from "./steam-preview.ts";
+import { isXboxConfirmRoute, isXboxPreviewRoute } from "./xbox.ts";
+import { xboxConfirmRequest, xboxPreviewRequest } from "./xbox-preview.ts";
+import { isEpicConfirmRoute, isEpicPreviewRoute } from "./epic.ts";
+import { epicConfirmRequest, epicPreviewRequest } from "./epic-preview.ts";
+import { isEAConfirmRoute, isEAPreviewRoute } from "./ea.ts";
+import { eaConfirmRequest, eaPreviewRequest } from "./ea-preview.ts";
+import { isUbisoftConfirmRoute, isUbisoftPreviewRoute } from "./ubisoft.ts";
+import {
+  ubisoftConfirmRequest,
+  ubisoftPreviewRequest,
+} from "./ubisoft-preview.ts";
+import {
+  isPlayStationConfirmRoute,
+  isPlayStationPreviewRoute,
+} from "./playstation.ts";
+import {
+  playStationConfirmRequest,
+  playStationPreviewRequest,
+} from "./playstation-preview.ts";
 
 export interface ApiEnvironment {
   SUPABASE_URL?: string;
@@ -15,6 +46,8 @@ export interface ApiEnvironment {
   R2_BUCKET?: string;
   R2_READ_ACCESS_KEY_ID?: string;
   R2_READ_SECRET_ACCESS_KEY?: string;
+  R2_UPLOAD_ACCESS_KEY_ID?: string;
+  R2_UPLOAD_SECRET_ACCESS_KEY?: string;
 }
 const reply = (body: unknown, status = 200) =>
   Response.json(body, {
@@ -31,18 +64,27 @@ export async function handleRequest(
   const requestUrl = new URL(request.url);
   const path = requestUrl.pathname;
   if (
-    (accountPaths.includes(path) || path.startsWith("/api/v1/admin/")) &&
+    (path === keyPath ||
+      path === consumerPath ||
+      accountPaths.includes(path) ||
+      path.startsWith("/api/v1/admin/") ||
+      isSubmissionRoute(path)) &&
     requestUrl.protocol !== "https:" &&
     !["localhost", "127.0.0.1"].includes(requestUrl.hostname)
   )
     return reply({ error: "HTTPS is required for account access." }, 403);
   if (
+    path === keyPath ||
     [
       "/api/v1/account/profile",
       "/api/v1/account/session",
       "/api/v1/account/logout",
       "/api/v1/admin/session",
     ].includes(path) ||
+    path === "/api/v1/admin/games" ||
+    path.startsWith("/api/v1/admin/store/") ||
+    (isMetadataRoute(path) && path.startsWith("/api/v1/admin/")) ||
+    isSubmissionRoute(path) ||
     ((isVersionRoute(path) || isDeliveryRoute(path)) &&
       path.startsWith("/api/v1/admin/"))
   )
@@ -56,8 +98,39 @@ async function routeRequest(
   env: ApiEnvironment,
 ): Promise<Response> {
   const url = new URL(request.url);
+  if (url.pathname === "/api/v1/catalog/artwork")
+    return catalogArtwork(request, env);
+  if (url.pathname === keyPath) return apiKeysRequest(request, env);
+  if (url.pathname === consumerPath) {
+    const denied = await verifyConsumerKey(request, env);
+    if (denied) return denied;
+    url.pathname = "/api/v1/games";
+    return routeRequest(new Request(url, request), env);
+  }
+  if (isMetadataRoute(url.pathname)) return metadataRequest(request, env);
+  if (url.pathname === "/api/v1/admin/games")
+    return administrativeGames(request, env);
+  if (isSubmissionRoute(url.pathname)) return submissionRequest(request, env);
   if (isDeliveryRoute(url.pathname)) return deliveryRequest(request, env);
   if (isVersionRoute(url.pathname)) return versionRequest(request, env);
+  if (isSteamConfirmRoute(url.pathname))
+    return steamConfirmRequest(request, env);
+  if (isSteamPreviewRoute(url.pathname))
+    return steamPreviewRequest(request, env);
+  if (isXboxConfirmRoute(url.pathname)) return xboxConfirmRequest(request, env);
+  if (isXboxPreviewRoute(url.pathname)) return xboxPreviewRequest(request, env);
+  if (isEpicConfirmRoute(url.pathname)) return epicConfirmRequest(request, env);
+  if (isEpicPreviewRoute(url.pathname)) return epicPreviewRequest(request, env);
+  if (isEAConfirmRoute(url.pathname)) return eaConfirmRequest(request, env);
+  if (isEAPreviewRoute(url.pathname)) return eaPreviewRequest(request, env);
+  if (isUbisoftConfirmRoute(url.pathname))
+    return ubisoftConfirmRequest(request, env);
+  if (isUbisoftPreviewRoute(url.pathname))
+    return ubisoftPreviewRequest(request, env);
+  if (isPlayStationConfirmRoute(url.pathname))
+    return playStationConfirmRequest(request, env);
+  if (isPlayStationPreviewRoute(url.pathname))
+    return playStationPreviewRequest(request, env);
   if (accountPaths.includes(url.pathname)) return accountRequest(request, env);
   if (request.method !== "GET")
     return reply({ error: "Method not allowed." }, 405);
@@ -121,7 +194,7 @@ async function routeRequest(
     let lookup = client
       .schema("catalog")
       .from("game_localizations")
-      .select("game_id,title,language,games!inner(status)")
+      .select("game_id,title,language,games!inner(status,item_type)")
       .eq("moderation_status", "approved")
       .eq("games.status", "published")
       .order("title")
@@ -131,11 +204,19 @@ async function routeRequest(
     const { data, error } = await lookup;
     if (error)
       return reply({ error: "Catalog is temporarily unavailable." }, 503);
-    const games: GameSummary[] = (data ?? []).map((row) => ({
-      id: row.game_id,
-      title: row.title,
-      language: row.language,
-    }));
+    const games: GameSummary[] = (data ?? []).map((row) => {
+      const relation = row.games as unknown as
+        | { item_type: GameSummary["itemType"] }
+        | Array<{ item_type: GameSummary["itemType"] }>;
+      return {
+        id: row.game_id,
+        title: row.title,
+        language: row.language,
+        itemType:
+          (Array.isArray(relation) ? relation[0] : relation)?.item_type ??
+          "game",
+      };
+    });
     return reply({ games });
   } catch {
     return reply({ error: "Service is temporarily unavailable." }, 503);

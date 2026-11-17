@@ -32,7 +32,7 @@ The name becomes the credit label for personal assets; it is not a unique handle
 
 Run `npm run setup:session` once to generate a private key in the ignored `.env`,
 then restart the API. Sign-in sets an encrypted HttpOnly cookie that survives
-reloads for up to seven days, with backend token renewal. Sign out expires the
+reloads for up to 30 days after a new sign-in, with backend token renewal. Existing sessions retain their original expiry. Sign out expires the
 cookie and requests remote session revocation. Local frontends on the same host
 share the cookie; different hostnames use separate sessions.
 Do not share passwords or tokens with the agent. To verify with a real account,

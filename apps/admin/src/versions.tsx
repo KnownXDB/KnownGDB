@@ -1,3 +1,4 @@
+import { runReviewWorkflow, type ReviewAction } from "./review-workflow";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AssetFile } from "@knowngdb/ui/asset-file";
 import type {
@@ -7,6 +8,27 @@ import type {
 } from "@knowngdb/contracts";
 
 export function VersionAdministration({ role }: { role: AdminRole }) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [gameNames, setGameNames] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const c = new AbortController();
+    fetch("/api/v1/admin/games", { signal: c.signal })
+      .then(async (r) => {
+        if (!r.ok) return;
+        const d = await r.json();
+        if (!c.signal.aborted)
+          setGameNames(
+            Object.fromEntries(
+              d.games.map((g: { id: string; title: string }) => [
+                g.id,
+                g.title,
+              ]),
+            ),
+          );
+      })
+      .catch(() => {});
+    return () => c.abort();
+  }, []);
   const [versions, setVersions] = useState<VersionSummary[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -112,6 +134,67 @@ export function VersionAdministration({ role }: { role: AdminRole }) {
       setPending(null);
     }
   }
+  async function reviewVersion(
+    event: FormEvent<HTMLFormElement>,
+    version: VersionSummary,
+  ) {
+    event.preventDefault();
+    if (pending) return;
+    const form = event.currentTarget;
+    const reason = String(new FormData(form).get("reason") ?? "").trim();
+    const action = (event.nativeEvent as SubmitEvent).submitter?.getAttribute(
+      "value",
+    );
+    if (!reason || !action) return;
+    setPending(version.id);
+    setMessage("");
+    let approved = version.moderation === "approved";
+    try {
+      async function request(path: string, body: object) {
+        const response = await fetch(path, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403)
+            window.dispatchEvent(new Event("knowngdb-session-changed"));
+          throw Error(data.error || "Action failed. Refresh before retrying.");
+        }
+      }
+      await runReviewWorkflow(
+        version,
+        action as ReviewAction,
+        reason,
+        request,
+        () => {
+          approved = true;
+        },
+      );
+      await load();
+      setMessage(
+        action === "approve-publish"
+          ? "Version approved and published."
+          : action === "approve"
+            ? "Version approved and still private."
+            : action === "reject"
+              ? "Version rejected and remains private."
+              : "Review started. Choose whether to approve or reject this version.",
+      );
+    } catch (error) {
+      await load();
+      const detail = error instanceof Error ? error.message : "Action failed.";
+      setMessage(
+        action === "approve-publish" && approved
+          ? `Version approved; publication could not be confirmed: ${detail} Check the current state before retrying.`
+          : `Could not complete the action: ${detail} Check the current state before retrying.`,
+      );
+    } finally {
+      setPending(null);
+    }
+  }
+
   return (
     <section aria-labelledby="version-history-heading">
       <div className="version-toolbar">
@@ -137,102 +220,209 @@ export function VersionAdministration({ role }: { role: AdminRole }) {
         {loading ? "Loading version history…" : message}
       </p>
       {!loading && !versions.length ? <p>No versions to display.</p> : null}
-      <ul className="version-list">
-        {versions.map((version) => (
-          <li key={version.id}>
-            <article aria-labelledby={`version-${version.id}`}>
-              <h3 id={`version-${version.id}`}>
-                {version.role.replaceAll("_", " ")} · Revision{" "}
-                {version.revision}
-              </h3>
-              <span
-                className={`version-status ${version.published ? "is-published" : ""}`}
-              >
-                {version.published ? "Published" : "Private"}
+      <div className="moderation-workspace">
+        <nav className="moderation-queue" aria-label="Asset queue">
+          {versions.map((v) => (
+            <button
+              type="button"
+              key={v.id}
+              aria-current={selectedId === v.id ? "true" : undefined}
+              onClick={() => setSelectedId(v.id)}
+            >
+              <strong>{gameNames[v.gameId] ?? "Catalog game"}</strong>
+              <span>
+                {v.role.replaceAll("_", " ")} · Revision {v.revision} ·{" "}
+                {v.moderation} · {v.published ? "Published" : "Private"}
               </span>
-              <dl className="version-metadata">
-                <div>
-                  <dt>Credit</dt>
-                  <dd>{version.credit.label}</dd>
-                </div>
-                <div>
-                  <dt>Languages</dt>
-                  <dd>
-                    {version.languageKind === "global"
-                      ? "Global"
-                      : version.languages.join(", ")}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Created</dt>
-                  <dd>
-                    <time dateTime={version.createdAt}>
-                      {new Date(version.createdAt).toLocaleString()}
-                    </time>
-                  </dd>
-                </div>
-                <div>
-                  <dt>Review</dt>
-                  <dd>{version.moderation}</dd>
-                </div>
-                <div>
-                  <dt>Storage</dt>
-                  <dd>{version.storageVerified ? "Verified" : "Unverified"}</dd>
-                </div>
-                <div>
-                  <dt>Context</dt>
-                  <dd>{version.context}</dd>
-                </div>
-              </dl>
-              <AssetFile
-                versionId={version.id}
-                label={version.role.replaceAll("_", " ")}
-                admin
-                available={
-                  version.storageVerified && version.role !== "trailer"
-                }
-              />
-              {version.changeReason ? (
-                <p className="version-reason">
-                  Last recorded reason: {version.changeReason}
-                </p>
-              ) : null}
-              {role === "super_admin" &&
-              (version.published || version.canPublish) ? (
-                <form
-                  className="publication-form"
-                  onSubmit={(event) => void changePublication(event, version)}
-                >
-                  <label htmlFor={`reason-${version.id}`}>
-                    Reason for{" "}
-                    {version.published ? "making private" : "publication"}
-                    <textarea
-                      id={`reason-${version.id}`}
-                      name="reason"
-                      required
-                      maxLength={2000}
-                      rows={2}
-                      disabled={Boolean(pending)}
+            </button>
+          ))}
+        </nav>
+        <div>
+          {!selectedId ? (
+            <div className="empty-state">
+              <h3>Select an asset</h3>
+              <p>
+                Choose a version from the queue to inspect its original and
+                review its publication requirements.
+              </p>
+            </div>
+          ) : null}
+          <ul className="version-list">
+            {versions
+              .filter((version) => selectedId === version.id)
+              .map((version) => (
+                <li key={version.id}>
+                  <article aria-labelledby={`version-${version.id}`}>
+                    <h3 id={`version-${version.id}`}>
+                      {gameNames[version.gameId] ?? "Catalog game"} ·{" "}
+                      {version.role.replaceAll("_", " ")} · Revision{" "}
+                      {version.revision}
+                    </h3>
+                    {message ? <p role="status">{message}</p> : null}
+                    <span
+                      className={`version-status ${version.published ? "is-published" : ""}`}
+                    >
+                      {version.published ? "Published" : "Private"}
+                    </span>
+                    <dl className="version-metadata">
+                      <div>
+                        <dt>Credit</dt>
+                        <dd>{version.credit.label}</dd>
+                      </div>
+                      <div>
+                        <dt>Languages</dt>
+                        <dd>
+                          {version.languageKind === "global"
+                            ? "Global"
+                            : version.languages.join(", ")}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Created</dt>
+                        <dd>
+                          <time dateTime={version.createdAt}>
+                            {new Date(version.createdAt).toLocaleString()}
+                          </time>
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Review</dt>
+                        <dd>{version.moderation}</dd>
+                      </div>
+                      <div>
+                        <dt>Storage</dt>
+                        <dd>
+                          {version.storageVerified ? "Verified" : "Unverified"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Context</dt>
+                        <dd>{version.context}</dd>
+                      </div>
+                    </dl>
+                    <AssetFile
+                      versionId={version.id}
+                      label={version.role.replaceAll("_", " ")}
+                      admin
+                      initialPreview
+                      available={
+                        version.storageVerified && version.role !== "trailer"
+                      }
                     />
-                  </label>
-                  <button disabled={Boolean(pending) || loading}>
-                    {pending === version.id
-                      ? "Saving…"
-                      : version.published
-                        ? "Make private"
-                        : "Publish version"}
-                  </button>
-                </form>
-              ) : role === "super_admin" ? (
-                <p>
-                  Publication is unavailable until the eligibility requirements
-                  are met.
-                </p>
-              ) : null}
-            </article>
-          </li>
-        ))}
-      </ul>
+                    {version.changeReason ? (
+                      <p className="version-reason">
+                        Last recorded reason: {version.changeReason}
+                      </p>
+                    ) : null}
+                    {!version.published &&
+                    ["submitted", "in_review"].includes(version.moderation) ? (
+                      <form
+                        className="publication-form"
+                        onSubmit={(event) => void reviewVersion(event, version)}
+                      >
+                        <label>
+                          Review reason
+                          <textarea
+                            name="reason"
+                            required
+                            maxLength={2000}
+                            disabled={Boolean(pending)}
+                          />
+                        </label>
+                        <div className="review-actions">
+                          <button
+                            value="approve"
+                            disabled={
+                              Boolean(pending) ||
+                              loading ||
+                              !version.storageVerified
+                            }
+                          >
+                            Approve and keep private
+                          </button>
+                          {role === "super_admin" &&
+                          version.storageVerified &&
+                          version.rightsVerified &&
+                          version.publicationBlockers?.length === 1 &&
+                          version.publicationBlockers.every((blocker) =>
+                            blocker.startsWith("Asset review is "),
+                          ) ? (
+                            <button
+                              value="approve-publish"
+                              disabled={Boolean(pending) || loading}
+                            >
+                              Approve and publish
+                            </button>
+                          ) : null}
+                          <button
+                            value="reject"
+                            disabled={Boolean(pending) || loading}
+                          >
+                            Reject version
+                          </button>
+                          {version.moderation === "submitted" ? (
+                            <button
+                              value="review"
+                              disabled={Boolean(pending) || loading}
+                            >
+                              Start review
+                            </button>
+                          ) : null}
+                        </div>
+                      </form>
+                    ) : null}
+                    {role === "super_admin" &&
+                    (version.published || version.canPublish) ? (
+                      <form
+                        className="publication-form"
+                        onSubmit={(event) =>
+                          void changePublication(event, version)
+                        }
+                      >
+                        <label htmlFor={`reason-${version.id}`}>
+                          Reason for{" "}
+                          {version.published ? "making private" : "publication"}
+                          <textarea
+                            id={`reason-${version.id}`}
+                            name="reason"
+                            required
+                            maxLength={2000}
+                            rows={2}
+                            disabled={Boolean(pending)}
+                          />
+                        </label>
+                        <button disabled={Boolean(pending) || loading}>
+                          {pending === version.id
+                            ? "Saving…"
+                            : version.published
+                              ? "Make private"
+                              : "Publish version"}
+                        </button>
+                      </form>
+                    ) : role === "super_admin" ? (
+                      <div>
+                        <p>Publication blocked:</p>
+                        <ul>
+                          {(version.publicationBlockers?.length
+                            ? version.publicationBlockers
+                            : [
+                                "Refresh history to check publication requirements.",
+                              ]
+                          ).map((reason) => (
+                            <li key={reason}>{reason}</li>
+                          ))}
+                        </ul>
+                        <a href={`/admin/games/${version.gameId}/visibility`}>
+                          Manage games
+                        </a>
+                      </div>
+                    ) : null}
+                  </article>
+                </li>
+              ))}
+          </ul>
+        </div>
+      </div>
       {cursor ? (
         <button
           onClick={() => void load(cursor)}

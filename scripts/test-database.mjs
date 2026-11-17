@@ -73,7 +73,7 @@ const migrationFiles = fs
   .readdirSync("supabase/migrations")
   .filter((name) => name.endsWith(".sql"))
   .sort();
-assert.equal(migrationFiles.length, 9);
+assert.equal(migrationFiles.length, 25);
 const sql = migrationFiles.map((file) =>
   fs.readFileSync(path.join("supabase/migrations", file), "utf8"),
 );
@@ -119,8 +119,19 @@ try {
   const tables = await fresh.query(
     "select relname,relrowsecurity from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='catalog' and c.relkind='r'",
   );
-  assert.equal(tables.rows.length, 13);
+  assert.equal(tables.rows.length, 26);
   assert.ok(tables.rows.every((row) => row.relrowsecurity));
+  for (const role of ["anon", "authenticated"]) {
+    assert.equal(
+      (
+        await fresh.query(
+          "select has_function_privilege($1::name,'catalog.bootstrap_admin()','execute') as allowed",
+          [role],
+        )
+      ).rows[0].allowed,
+      false,
+    );
+  }
   for (const role of ["anon", "authenticated"]) {
     await fresh.query(`set role ${role}`);
     await assert.rejects(
@@ -138,6 +149,76 @@ try {
   );
   await fresh.query("begin");
   try {
+    await fresh.query(fs.readFileSync("supabase/tests/api-keys.sql", "utf8"));
+  } finally {
+    await fresh.query("rollback");
+  }
+  await fresh.query("begin");
+  try {
+    await fresh.query(
+      fs.readFileSync("supabase/tests/catalog-items.sql", "utf8"),
+    );
+  } finally {
+    await fresh.query("rollback");
+  }
+  await fresh.query("begin");
+  try {
+    await fresh.query(
+      fs.readFileSync("supabase/tests/external-identities.sql", "utf8"),
+    );
+  } finally {
+    await fresh.query("rollback");
+  }
+  await fresh.query("begin");
+  try {
+    await fresh.query(
+      fs.readFileSync("supabase/tests/steam-observation.sql", "utf8"),
+    );
+  } finally {
+    await fresh.query("rollback");
+  }
+  await fresh.query("begin");
+  try {
+    await fresh.query(
+      fs.readFileSync("supabase/tests/xbox-observation.sql", "utf8"),
+    );
+  } finally {
+    await fresh.query("rollback");
+  }
+  await fresh.query("begin");
+  try {
+    await fresh.query(
+      fs.readFileSync("supabase/tests/epic-observation.sql", "utf8"),
+    );
+  } finally {
+    await fresh.query("rollback");
+  }
+  await fresh.query("begin");
+  try {
+    await fresh.query(
+      fs.readFileSync("supabase/tests/ea-observation.sql", "utf8"),
+    );
+  } finally {
+    await fresh.query("rollback");
+  }
+  await fresh.query("begin");
+  try {
+    await fresh.query(
+      fs.readFileSync("supabase/tests/ubisoft-observation.sql", "utf8"),
+    );
+  } finally {
+    await fresh.query("rollback");
+  }
+  await fresh.query("begin");
+  try {
+    await fresh.query(
+      fs.readFileSync("supabase/tests/playstation-observation.sql", "utf8"),
+    );
+  } finally {
+    await fresh.query("rollback");
+  }
+  await fresh.query("begin");
+  try {
     await fresh.query(
       fs.readFileSync("supabase/tests/asset-history.sql", "utf8"),
     );
@@ -152,7 +233,29 @@ try {
     ).rows[0].n,
     0,
   );
+  await fresh.query("begin");
+  try {
+    await fresh.query(
+      fs.readFileSync("supabase/tests/asset-submissions.sql", "utf8"),
+    );
+  } finally {
+    await fresh.query("rollback");
+  }
+  console.log(
+    "PASS: contributor/session/credit guards, immutable private originals, idempotent completion, revisions, moderation transitions, audit, expiry, quotas and denied browser RPCs.",
+  );
   // Exercise actual planner output against PostgreSQL, inside a rolled-back fixture.
+  await fresh.query("begin");
+  try {
+    await fresh.query(
+      fs.readFileSync("supabase/tests/game-metadata.sql", "utf8"),
+    );
+  } finally {
+    await fresh.query("rollback");
+  }
+  console.log(
+    "PASS: normalized game metadata, date precision, scoped credits/languages, stale revisions, approval isolation, audit and denied browser writes.",
+  );
   await fresh.query("begin");
   try {
     const gameId = (await fresh.query("select id from catalog.games limit 1"))
@@ -496,7 +599,7 @@ try {
     (error) => error.code === "P0001",
   );
   console.log(
-    "PASS: nine migrations on disposable PostgreSQL 17; empty/existing/ambiguous admin guards, 13 RLS tables, denied browser roles, transactional import/publication and rollback-only asset-history SQL.",
+    "PASS: twenty-five migrations on disposable PostgreSQL 17; empty/existing/ambiguous admin guards, 26 RLS tables, denied browser roles, transactional import/publication/metadata, API keys and store-observation SQL.",
   );
   console.log(
     "Auth tables are a minimal SQL contract fixture; this is not a full Supabase Auth/API stack test.",
