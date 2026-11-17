@@ -19,11 +19,13 @@ Commercial plans and measured operational rate limits remain a separate delivery
 
 See [consumption documentation](../API-CONSUMPTION.md) for activation and acceptance.
 
-## Pending local key management update
+## Key management update
 
-The local update supports owner-scoped renaming and permanent deletion, including
+The update supports owner-scoped renaming and permanent deletion, including
 revoked keys. Deletion removes the key hash and immediately prevents subsequent
 authorizations; already authorized requests can finish. The UI confirms deletion
 and warns when an active integration may be affected. Revocation remains a
-separate, backwards-compatible operation. The additive migration must be applied
-explicitly to each target environment before these operations are available.
+separate, backwards-compatible operation. Migration `20261117175317` was applied
+on the hosted testing environment; the original game, version and API key counts
+were unchanged and browser roles remain unable to execute the service function.
+Real-account rename and deletion acceptance remains pending.
