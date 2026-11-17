@@ -1,3 +1,5 @@
+import { confirmAction, showFieldError } from "@knowngdb/ui/feedback";
+import { Disclosure, Select } from "@knowngdb/ui/controls";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import {
   gameTypes,
@@ -97,15 +99,6 @@ export function GameMetadataEditor({
     onDirtyChange(dirty);
   }, [dirty, onDirtyChange]);
   useEffect(() => {
-    if (!dirty) return;
-    const guard = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", guard);
-    return () => window.removeEventListener("beforeunload", guard);
-  }, [dirty]);
-  useEffect(() => {
     const controller = new AbortController();
     setPage(null);
     setDraft(null);
@@ -152,8 +145,11 @@ export function GameMetadataEditor({
       setSection(owner === "localizations" ? "overview" : owner);
       setMessage("Complete the highlighted field before saving.");
       requestAnimationFrame(() => {
-        invalid.focus();
-        invalid.reportValidity();
+        showFieldError(invalid);
+        (invalid.classList.contains("native-select-proxy")
+          ? invalid.parentElement?.querySelector<HTMLButtonElement>("button")
+          : invalid
+        )?.focus();
       });
       return;
     }
@@ -173,7 +169,11 @@ export function GameMetadataEditor({
           },
           source,
           confidence,
-          reason,
+          reason:
+            reason.trim() ||
+            (role === "super_admin"
+              ? "No reason provided by Super Admin."
+              : reason),
         }),
       );
       setRefresh((v) => v + 1);
@@ -207,6 +207,16 @@ export function GameMetadataEditor({
     if (busy) return;
     const form = event.currentTarget,
       data = new FormData(form);
+    const missing = ["name", "source"].find(
+      (name) => !String(data.get(name) ?? "").trim(),
+    );
+    if (missing) {
+      setMessage(
+        missing === "name" ? "Enter an entry name." : "Enter an entry source.",
+      );
+      form.querySelector<HTMLElement>(`[name="${missing}"]`)?.focus();
+      return;
+    }
     setBusy(true);
     setMessage("");
     try {
@@ -254,14 +264,14 @@ export function GameMetadataEditor({
   ) => (
     <label>
       {label}
-      <select
+      <Select
         aria-label={label}
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value || null)}
       >
         <option value="">Whole game</option>
         {releaseChoices()}
-      </select>
+      </Select>
     </label>
   );
   return (
@@ -293,14 +303,13 @@ export function GameMetadataEditor({
           </button>
         ))}
       </nav>
-      <details className="editor-help">
-        <summary>About revisions and approval</summary>
+      <Disclosure className="editor-help" title="About revisions and approval">
         <p>
           Save a pending revision, then review and approve it separately.
           Existing public metadata remains unchanged until approval. Approval
           does not publish the game or its images.
         </p>
-      </details>
+      </Disclosure>
       <p role="status" aria-live="polite">
         {message ||
           (!draft
@@ -313,35 +322,40 @@ export function GameMetadataEditor({
         type="button"
         disabled={busy}
         onClick={() => {
-          if (
-            !dirty ||
-            window.confirm("Discard unsaved metadata changes and reload?")
-          )
+          if (!dirty) {
             setRefresh((v) => v + 1);
+            return;
+          }
+          void confirmAction(
+            "Your unsaved metadata changes will be lost.",
+          ).then((confirmed) => {
+            if (confirmed) setRefresh((v) => v + 1);
+          });
         }}
       >
         Reload metadata
       </button>
       {draft && page ? (
         <>
-          <details
+          <Disclosure
+            title="Create a catalog entry"
             hidden={
               !["companies", "releases", "classification"].includes(section)
             }
           >
-            <summary>Create a catalog entry</summary>
             <p>
               Choose existing entries first. Duplicate names require manual
               identity review.
             </p>
             <form
               className="submission-form"
+              noValidate
               onSubmit={(e) => void createTerm(e)}
             >
               <fieldset disabled={busy}>
                 <label>
                   Entry type
-                  <select
+                  <Select
                     aria-label="Entry type"
                     name="kind"
                     key={section}
@@ -356,7 +370,7 @@ export function GameMetadataEditor({
                     {termKinds.map((k) => (
                       <option key={k}>{k}</option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
                 <label>
                   Entry name
@@ -374,7 +388,7 @@ export function GameMetadataEditor({
               </fieldset>
               <button disabled={busy}>Create catalog entry</button>
             </form>
-          </details>
+          </Disclosure>
           <form
             className="submission-form"
             noValidate
@@ -414,7 +428,7 @@ export function GameMetadataEditor({
                 </label>
                 <label>
                   Game type
-                  <select
+                  <Select
                     aria-label="Game type"
                     value={draft.gameType}
                     onChange={(e) =>
@@ -428,7 +442,7 @@ export function GameMetadataEditor({
                         {t.replaceAll("_", " ")}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
                 <Group
                   title="Localizations"
@@ -554,7 +568,7 @@ export function GameMetadataEditor({
                     <h5>Release {i + 1}</h5>
                     <label>
                       Platform {i + 1}
-                      <select
+                      <Select
                         aria-label={`Platform ${i + 1}`}
                         required
                         value={r.platformId}
@@ -566,7 +580,7 @@ export function GameMetadataEditor({
                       >
                         <option value="">Choose platform</option>
                         {choices("platform")}
-                      </select>
+                      </Select>
                     </label>
                     <label>
                       Edition {i + 1}
@@ -622,7 +636,7 @@ export function GameMetadataEditor({
                     </label>
                     <label>
                       Release status {i + 1}
-                      <select
+                      <Select
                         aria-label={`Release status ${i + 1}`}
                         value={r.status}
                         onChange={(e) =>
@@ -635,11 +649,11 @@ export function GameMetadataEditor({
                         {releaseStates.map((s) => (
                           <option key={s}>{s}</option>
                         ))}
-                      </select>
+                      </Select>
                     </label>
                     <label>
                       Availability {i + 1}
-                      <select
+                      <Select
                         aria-label={`Availability ${i + 1}`}
                         value={r.availability}
                         onChange={(e) =>
@@ -657,7 +671,7 @@ export function GameMetadataEditor({
                         ].map((s) => (
                           <option key={s}>{s}</option>
                         ))}
-                      </select>
+                      </Select>
                     </label>
                     <label>
                       Store URL {i + 1}
@@ -715,7 +729,7 @@ export function GameMetadataEditor({
                   <div className="metadata-row" key={i}>
                     <label>
                       Organization {i + 1}
-                      <select
+                      <Select
                         aria-label={`Organization ${i + 1}`}
                         required
                         value={c.organizationId}
@@ -727,11 +741,11 @@ export function GameMetadataEditor({
                       >
                         <option value="">Choose organization</option>
                         {choices("organization")}
-                      </select>
+                      </Select>
                     </label>
                     <label>
                       Company role {i + 1}
-                      <select
+                      <Select
                         aria-label={`Company role ${i + 1}`}
                         value={c.role}
                         onChange={(e) =>
@@ -749,7 +763,7 @@ export function GameMetadataEditor({
                         ].map((s) => (
                           <option key={s}>{s}</option>
                         ))}
-                      </select>
+                      </Select>
                     </label>
                     {scope(`Credit scope ${i + 1}`, c.releaseId, (id) =>
                       edit((d) => {
@@ -823,7 +837,7 @@ export function GameMetadataEditor({
                     {(["interface", "subtitles", "audio"] as const).map((k) => (
                       <label key={k}>
                         {k} support {i + 1}
-                        <select
+                        <Select
                           aria-label={`${k} support ${i + 1}`}
                           value={l[k] === null ? "unknown" : String(l[k])}
                           onChange={(e) =>
@@ -838,7 +852,7 @@ export function GameMetadataEditor({
                           <option value="unknown">Unknown</option>
                           <option value="true">Supported</option>
                           <option value="false">Not supported</option>
-                        </select>
+                        </Select>
                       </label>
                     ))}
                     <button
@@ -865,7 +879,7 @@ export function GameMetadataEditor({
                   (kind) => (
                     <label key={kind}>
                       {kind}
-                      <select
+                      <Select
                         aria-label={kind}
                         multiple
                         size={4}
@@ -889,7 +903,7 @@ export function GameMetadataEditor({
                         }}
                       >
                         {choices(kind)}
-                      </select>
+                      </Select>
                     </label>
                   ),
                 )}
@@ -941,10 +955,11 @@ export function GameMetadataEditor({
                   />
                 </label>
                 <label>
-                  Reason for metadata change
+                  Reason for metadata change{" "}
+                  {role === "super_admin" ? "(optional)" : ""}
                   <textarea
                     aria-label="Reason for metadata change"
-                    required
+                    required={role !== "super_admin"}
                     maxLength={2000}
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}

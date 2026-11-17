@@ -79,8 +79,9 @@ export async function apiKeysRequest(request: Request, env: ApiEnvironment) {
       body.expiresAt === undefined && request.method === "POST"
         ? null
         : body.expiresAt;
+    const rename = request.method === "PATCH" && "name" in body;
     if (
-      ["POST", "PATCH"].includes(request.method) &&
+      (request.method === "POST" || (request.method === "PATCH" && !rename)) &&
       !validKeyExpiration(expiresAt)
     )
       return reply(
@@ -90,13 +91,22 @@ export async function apiKeysRequest(request: Request, env: ApiEnvironment) {
     if (
       request.method === "PATCH" &&
       (!/^[0-9a-f-]{36}$/i.test(id) ||
-        Object.keys(body).some((k) => !["id", "expiresAt"].includes(k)))
+        (rename
+          ? !name ||
+            name.length > 80 ||
+            /[\p{Cc}\p{Cf}<>]/u.test(name) ||
+            Object.keys(body).some((k) => !["id", "name"].includes(k))
+          : Object.keys(body).some((k) => !["id", "expiresAt"].includes(k))))
     )
-      return reply({ error: "Provide a valid key ID and expiration." }, 400);
+      return reply(
+        { error: "Provide a valid key ID and name or expiration." },
+        400,
+      );
     if (
       request.method === "DELETE" &&
       (!/^[0-9a-f-]{36}$/i.test(id) ||
-        Object.keys(body).some((k) => k !== "id"))
+        ("permanent" in body && body.permanent !== true) ||
+        Object.keys(body).some((k) => !["id", "permanent"].includes(k)))
     )
       return reply({ error: "Provide a valid key ID." }, 400);
     const key =
@@ -106,7 +116,11 @@ export async function apiKeysRequest(request: Request, env: ApiEnvironment) {
     const result = await client.rpc("account_api_keys", {
       p_actor: verified.data.user.id,
       p_session: session,
-      p_action: request.method,
+      p_action: rename
+        ? "RENAME"
+        : request.method === "DELETE" && body.permanent === true
+          ? "PURGE"
+          : request.method,
       p_id: id || null,
       p_name: name || null,
       p_hash: key ? hashApiKey(key) : null,

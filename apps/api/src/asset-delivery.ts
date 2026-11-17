@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import sharp from "sharp";
 import { createClient } from "@supabase/supabase-js";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { verifyAdmin } from "./admin-access.ts";
@@ -30,7 +31,9 @@ const error = (
     },
   );
 export const isDeliveryRoute = (path: string) =>
-  /^\/api\/v1\/(admin\/)?asset-versions\/[^/]+\/(preview|download)$/.test(path);
+  /^\/api\/v1\/(admin\/)?asset-versions\/[^/]+\/(preview|download|thumbnail|display)$/.test(
+    path,
+  );
 
 export async function readOriginal(
   client: S3Client,
@@ -76,6 +79,12 @@ type Reader = (
   size: number,
   signal: AbortSignal,
 ) => Promise<{ bytes: Uint8Array; contentType: string }>;
+let cachedStorage: {
+  account: string;
+  accessKey: string;
+  secret: string;
+  client: S3Client;
+} | null = null;
 function reader(env: ApiEnvironment): Reader {
   if (
     !/^[a-f0-9]{32}$/i.test(env.R2_ACCOUNT_ID ?? "") ||
@@ -84,22 +93,82 @@ function reader(env: ApiEnvironment): Reader {
     !env.R2_READ_SECRET_ACCESS_KEY
   )
     throw Error("Read-only storage configuration unavailable");
-  const client = new S3Client({
-    region: "auto",
-    endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    credentials: {
-      accessKeyId: env.R2_READ_ACCESS_KEY_ID,
-      secretAccessKey: env.R2_READ_SECRET_ACCESS_KEY,
-    },
-    maxAttempts: 1,
-  });
-  return async (key, size, signal) => {
-    try {
-      return await readOriginal(client, env.R2_BUCKET!, key, size, signal);
-    } finally {
-      client.destroy();
-    }
-  };
+  const account = env.R2_ACCOUNT_ID!,
+    accessKey = env.R2_READ_ACCESS_KEY_ID,
+    secret = env.R2_READ_SECRET_ACCESS_KEY;
+  if (
+    !cachedStorage ||
+    cachedStorage.account !== account ||
+    cachedStorage.accessKey !== accessKey ||
+    cachedStorage.secret !== secret
+  ) {
+    cachedStorage = {
+      account,
+      accessKey,
+      secret,
+      client: new S3Client({
+        region: "auto",
+        endpoint: `https://${account}.r2.cloudflarestorage.com`,
+        credentials: { accessKeyId: accessKey, secretAccessKey: secret },
+        maxAttempts: 1,
+      }),
+    };
+  }
+  const client = cachedStorage.client;
+  const bucket = env.R2_BUCKET!;
+  return (key, size, signal) => readOriginal(client, bucket, key, size, signal);
+}
+// Derived bytes are process-local and bounded; access is checked before every hit.
+const derivativeCache = new Map<string, { bytes: Buffer; mime: string }>();
+let derivativeBytes = 0;
+const derivativeLimit = 32 * 1024 * 1024;
+function rememberDerivative(
+  key: string,
+  value: { bytes: Buffer; mime: string },
+) {
+  if (value.bytes.length > derivativeLimit) return;
+  const existing = derivativeCache.get(key);
+  if (existing) {
+    derivativeBytes -= existing.bytes.length;
+    derivativeCache.delete(key);
+  }
+  while (derivativeBytes + value.bytes.length > derivativeLimit) {
+    const oldest = derivativeCache.keys().next().value;
+    if (oldest === undefined) break;
+    derivativeBytes -= derivativeCache.get(oldest)!.bytes.length;
+    derivativeCache.delete(oldest);
+  }
+  derivativeCache.set(key, value);
+  derivativeBytes += value.bytes.length;
+}
+function verifiedBytes(
+  original: { bytes: Uint8Array; contentType: string },
+  size: number,
+  extension: string,
+  mime: string,
+  checksum: string,
+) {
+  const bytes = Buffer.from(original.bytes);
+  const signature =
+    extension === "png"
+      ? bytes
+          .subarray(0, 8)
+          .equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+      : extension === "jpg"
+        ? bytes.subarray(0, 3).equals(Buffer.from([255, 216, 255]))
+        : bytes.subarray(0, 4).equals(Buffer.from([0, 0, 1, 0]));
+  const typeMatches =
+    original.contentType === mime ||
+    (extension === "ico" &&
+      original.contentType === "image/vnd.microsoft.icon");
+  if (
+    bytes.length !== size ||
+    !typeMatches ||
+    !signature ||
+    createHash("sha256").update(bytes).digest("hex") !== checksum
+  )
+    throw Error("Original integrity could not be verified");
+  return bytes;
 }
 export function byteRange(
   value: string | null,
@@ -199,6 +268,82 @@ export async function deliveryRequest(
       !/^[a-f0-9]{64}$/.test(row.checksum_sha256)
     )
       return error("Original integrity could not be verified.", 503);
+    const variant = url.pathname.split("/").at(-1);
+    if (variant === "thumbnail" || variant === "display") {
+      const cacheKey = JSON.stringify([
+        env.SUPABASE_URL,
+        env.R2_ACCOUNT_ID,
+        env.R2_BUCKET,
+        canonical,
+        row.checksum_sha256,
+        variant,
+      ]);
+      const etag = `"derivative-v1-${variant}-${row.checksum_sha256}"`;
+      const headers: Record<string, string> = {
+        "Cache-Control": admin ? "private, no-store" : "private, no-cache",
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; sandbox",
+        "Cross-Origin-Resource-Policy": "same-origin",
+        "Referrer-Policy": "no-referrer",
+        "X-Frame-Options": "DENY",
+        ETag: etag,
+      };
+      if (
+        !admin &&
+        request.headers
+          .get("If-None-Match")
+          ?.split(",")
+          .some((item) => item.trim() === etag || item.trim() === "*")
+      )
+        return new Response(null, { status: 304, headers });
+      let image = derivativeCache.get(cacheKey);
+      if (image) {
+        derivativeCache.delete(cacheKey);
+        derivativeCache.set(cacheKey, image);
+      }
+      if (!image) {
+        const original = await (read ?? reader(env))(
+          canonical,
+          size,
+          AbortSignal.any([request.signal, AbortSignal.timeout(15000)]),
+        );
+        const bytes = verifiedBytes(
+          original,
+          size,
+          row.extension,
+          mime,
+          row.checksum_sha256,
+        );
+        if (row.extension === "ico") {
+          // ICO can contain bitmap frames unsupported by the image processor.
+          image = { bytes, mime };
+        } else {
+          const bound = variant === "thumbnail" ? 480 : 1280;
+          const transformed = await sharp(bytes, {
+            limitInputPixels: 40000000,
+            failOn: "warning",
+          })
+            .rotate()
+            .resize({
+              width: bound,
+              height: bound,
+              fit: "inside",
+              withoutEnlargement: true,
+            })
+            .webp({ quality: 80 })
+            .toBuffer();
+          image = { bytes: transformed, mime: "image/webp" };
+        }
+        rememberDerivative(cacheKey, image);
+      }
+      headers["Content-Type"] = image.mime;
+      headers["Content-Length"] = String(image.bytes.length);
+      headers["Content-Disposition"] = "inline";
+      return new Response(
+        request.method === "HEAD" ? null : new Uint8Array(image.bytes),
+        { status: 200, headers },
+      );
+    }
     const etag = `"sha256-${row.checksum_sha256}"`;
     const ifRange = request.headers.get("If-Range");
     const requestedRange =
@@ -233,26 +378,13 @@ export async function deliveryRequest(
       size,
       AbortSignal.any([request.signal, AbortSignal.timeout(15000)]),
     );
-    const bytes = Buffer.from(original.bytes);
-    const signature =
-      row.extension === "png"
-        ? bytes
-            .subarray(0, 8)
-            .equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
-        : row.extension === "jpg"
-          ? bytes.subarray(0, 3).equals(Buffer.from([255, 216, 255]))
-          : bytes.subarray(0, 4).equals(Buffer.from([0, 0, 1, 0]));
-    const typeMatches =
-      original.contentType === mime ||
-      (row.extension === "ico" &&
-        original.contentType === "image/vnd.microsoft.icon");
-    if (
-      bytes.length !== size ||
-      !typeMatches ||
-      !signature ||
-      createHash("sha256").update(bytes).digest("hex") !== row.checksum_sha256
-    )
-      return error("Original integrity could not be verified.", 503);
+    const bytes = verifiedBytes(
+      original,
+      size,
+      row.extension,
+      mime,
+      row.checksum_sha256,
+    );
     let offset = start;
     const body = new ReadableStream<Uint8Array>({
       pull(controller) {

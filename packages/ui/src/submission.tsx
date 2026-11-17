@@ -1,3 +1,4 @@
+import { Disclosure, FilePicker, Select } from "./controls";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   assetRoles,
@@ -5,6 +6,24 @@ import {
   type AdminRole,
   type GameSummary,
 } from "@knowngdb/contracts";
+
+function validateLocalDate(event: React.ChangeEvent<HTMLInputElement>) {
+  const field = event.currentTarget;
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(field.value);
+  if (!field.value || !match) {
+    field.setCustomValidity("");
+    return;
+  }
+  const [, year, month, day, hour, minute] = match.map(Number);
+  const date = new Date(year, month - 1, day, hour, minute);
+  const valid =
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day &&
+    date.getHours() === hour &&
+    date.getMinutes() === minute;
+  field.setCustomValidity(valid ? "" : "Enter a valid local date and time.");
+}
 
 type Collection = {
   id: string;
@@ -34,15 +53,6 @@ export function AssetSubmission({
     onDirtyChange?.(hasChanges);
   }, [hasChanges, onDirtyChange]);
   useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
-  useEffect(() => {
-    if (!hasChanges) return;
-    const guard = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", guard);
-    return () => window.removeEventListener("beforeunload", guard);
-  }, [hasChanges]);
   const [busy, setBusy] = useState(false),
     [ready, setReady] = useState(false),
     [message, setMessage] = useState(""),
@@ -57,6 +67,7 @@ export function AssetSubmission({
       pending.current = null;
       setCollection("");
       setReady(false);
+      setMessage("");
       setAccountRevision((value) => value + 1);
     };
     const channel =
@@ -74,7 +85,6 @@ export function AssetSubmission({
     if (!open) return;
     const abort = new AbortController();
     setReady(false);
-    setMessage("");
     Promise.all([
       fetch(role ? "/api/v1/admin/games" : "/api/v1/games", {
         signal: abort.signal,
@@ -256,7 +266,7 @@ export function AssetSubmission({
             <fieldset disabled={busy || !ready || Boolean(pending.current)}>
               <label>
                 Version history
-                <select
+                <Select
                   aria-label="Version history"
                   value={collection}
                   onChange={(e) => setCollection(e.target.value)}
@@ -270,13 +280,13 @@ export function AssetSubmission({
                       {new Date(c.created_at).toLocaleDateString()}
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
               {!selected ? (
                 <>
                   <label>
                     Game
-                    <select aria-label="Game" name="game" required>
+                    <Select aria-label="Game" name="game" required>
                       <option value="">Select a game</option>
                       {games
                         .filter(
@@ -291,11 +301,11 @@ export function AssetSubmission({
                               : ""}
                           </option>
                         ))}
-                    </select>
+                    </Select>
                   </label>
                   <label>
                     Asset type
-                    <select aria-label="Asset type" name="role">
+                    <Select aria-label="Asset type" name="role">
                       {assetRoles
                         .filter((r) => r !== "trailer")
                         .map((r) => (
@@ -303,11 +313,11 @@ export function AssetSubmission({
                             {r.replaceAll("_", " ")}
                           </option>
                         ))}
-                    </select>
+                    </Select>
                   </label>
                   <label>
                     Publication credit
-                    <select aria-label="Publication credit" name="credit">
+                    <Select aria-label="Publication credit" name="credit">
                       <option value="personal">Personal</option>
                       {role === "super_admin" ? (
                         <>
@@ -315,7 +325,7 @@ export function AssetSubmission({
                           <option value="platform">Created by KnownGDB</option>
                         </>
                       ) : null}
-                    </select>
+                    </Select>
                   </label>
                 </>
               ) : (
@@ -324,32 +334,46 @@ export function AssetSubmission({
                   credit and earlier originals.
                 </p>
               )}
-              <label>
-                Languages
-                <input
-                  name="languages"
-                  placeholder="en, es-uy; leave empty for Global"
-                  maxLength={120}
-                />
-              </label>
-              <label>
-                Season or event
-                <input
-                  name="context"
-                  defaultValue="base"
-                  pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                  maxLength={100}
-                  required
-                />
-              </label>
-              <label>
-                Valid from
-                <input name="from" type="datetime-local" />
-              </label>
-              <label>
-                Valid until
-                <input name="until" type="datetime-local" />
-              </label>
+              <Disclosure title="Language, season and validity (optional)">
+                <label>
+                  Languages
+                  <input
+                    name="languages"
+                    placeholder="en, es-uy; leave empty for Global"
+                    maxLength={120}
+                  />
+                </label>
+                <label>
+                  Season or event
+                  <input
+                    name="context"
+                    defaultValue="base"
+                    pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                    maxLength={100}
+                    required
+                  />
+                </label>
+                <label>
+                  Valid from
+                  <input
+                    name="from"
+                    type="text"
+                    onChange={validateLocalDate}
+                    placeholder="YYYY-MM-DDTHH:mm"
+                    pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}"
+                  />
+                </label>
+                <label>
+                  Valid until
+                  <input
+                    name="until"
+                    type="text"
+                    onChange={validateLocalDate}
+                    placeholder="YYYY-MM-DDTHH:mm"
+                    pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}"
+                  />
+                </label>
+              </Disclosure>
               <label>
                 Source reference
                 <textarea name="source" required maxLength={2000} />
@@ -360,9 +384,8 @@ export function AssetSubmission({
               </label>
               <label>
                 Original image
-                <input
+                <FilePicker
                   name="original"
-                  type="file"
                   accept=".png,.jpg,.jpeg,.ico"
                   required
                 />

@@ -73,7 +73,7 @@ export function Developers() {
           Known<span>GDB</span>
         </a>
         <span>Developers · API v1</span>
-        <a href="/#/account">Manage API keys ↗</a>
+        <a href="/account">Manage API keys ↗</a>
       </header>
       <div className="developer-layout">
         <nav className="developer-index" aria-label="Developer documentation">
@@ -108,7 +108,7 @@ export function Developers() {
               <a className="button" href="#playground">
                 Try a request
               </a>{" "}
-              <a className="button secondary" href="/#/account">
+              <a className="button secondary" href="/account">
                 Get an API key
               </a>
             </p>
@@ -296,7 +296,7 @@ export function Developers() {
             )}
             <p>
               To verify revocation: send a successful request, revoke the key in{" "}
-              <a href="/#/account" target="_blank" rel="noopener noreferrer">
+              <a href="/account" target="_blank" rel="noopener noreferrer">
                 Account
               </a>
               , then send again. Expect HTTP 401.

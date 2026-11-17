@@ -28,6 +28,13 @@ for (const app of ["web", "admin"]) {
       await server.listen();
       const address = server.httpServer!.address();
       assert.ok(address && typeof address !== "string");
+      const deepLink =
+        app === "admin"
+          ? "/admin/games/example/visibility"
+          : "/games/example/en";
+      const page = await fetch(`http://127.0.0.1:${address.port}${deepLink}`);
+      assert.equal(page.status, 200);
+      assert.match(await page.text(), /<div id="root"><\/div>/);
       const base = `http://127.0.0.1:${address.port}${app === "admin" ? "/admin" : ""}/@fs/`;
       const allowed = await fetch(
         base + path.join(fixture, "allowed.txt").replaceAll("\\", "/"),

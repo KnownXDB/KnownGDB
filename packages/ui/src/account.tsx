@@ -70,7 +70,11 @@ export function Account({
     void restore(true);
     const sessionChanged = () => void restore(true);
     window.addEventListener("knowngdb-session-changed", sessionChanged);
-    const timer = setInterval(() => void restore(), 60_000);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void restore();
+    };
+    const timer = setInterval(refreshWhenVisible, 5 * 60_000);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
     const channel =
       typeof BroadcastChannel !== "undefined"
         ? new BroadcastChannel("knowngdb-account")
@@ -79,6 +83,7 @@ export function Account({
     return () => {
       active = false;
       clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
       channel?.close();
       window.removeEventListener("knowngdb-session-changed", sessionChanged);
     };
@@ -99,15 +104,24 @@ export function Account({
       },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
-    const data = await response.json();
+    const data = await response.json().catch(() => null);
     if (!response.ok) {
       if (response.status === 401) {
         setSignedIn(false);
         setName("");
         setRole("");
       }
-      throw Error(data.error || "Account request failed.");
+      throw Error(
+        data?.error ||
+          (response.status >= 500
+            ? "Account service is temporarily unavailable. Please try again."
+            : "Account request failed. Please try again."),
+      );
     }
+    if (!data || typeof data !== "object")
+      throw Error(
+        "Account service returned an invalid response. Please try again.",
+      );
     return data;
   }
   async function authenticate(event: FormEvent<HTMLFormElement>) {
@@ -287,7 +301,7 @@ export function Account({
         </button>
       ) : null}
       <p>
-        Your session survives reloads for up to seven days. Sign out on shared
+        Your session survives reloads for up to 30 days. Sign out on shared
         devices.
       </p>
     </section>

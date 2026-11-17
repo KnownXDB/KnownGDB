@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { AssetFile } from "@knowngdb/ui/asset-file";
-import type { VersionSummary, VersionPage } from "@knowngdb/contracts";
+import type {
+  VersionSummary,
+  VersionPage,
+  GameMetadata,
+  CatalogTerm,
+} from "@knowngdb/contracts";
+import { Gamepad2, Globe2, Layers3 } from "lucide-react";
 
 export function PublishedVersions({
   gameId,
@@ -13,6 +19,8 @@ export function PublishedVersions({
   const [cursor, setCursor] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [category, setCategory] = useState("all");
+  const [platforms, setPlatforms] = useState<string[]>([]);
   const request = useRef<AbortController | null>(null);
   async function load(after: string | null = null) {
     request.current?.abort();
@@ -46,45 +54,176 @@ export function PublishedVersions({
   }
   useEffect(() => {
     setVersions([]);
+    setCategory("all");
+    setPlatforms([]);
     void load();
-    return () => request.current?.abort();
+    const controller = new AbortController();
+    void fetch(`/api/v1/games/${encodeURIComponent(gameId)}/metadata`, {
+      signal: controller.signal,
+    })
+      .then(async (response) =>
+        response.ok
+          ? ((await response.json()) as {
+              data: GameMetadata;
+              terms: CatalogTerm[];
+            })
+          : null,
+      )
+      .then((result) => {
+        if (!result || controller.signal.aborted) return;
+        const names = new Map(
+          result.terms
+            .filter((term) => term.kind === "platform")
+            .map((term) => [term.id, term.name]),
+        );
+        setPlatforms([
+          ...new Set(
+            result.data.releases
+              .map((release) => names.get(release.platformId))
+              .filter((name): name is string => Boolean(name)),
+          ),
+        ]);
+      })
+      .catch(() => {});
+    return () => {
+      request.current?.abort();
+      controller.abort();
+    };
   }, [gameId]);
+  const groups = [
+    { id: "all", label: "All artwork", roles: [] },
+    { id: "capsule", label: "Capsules", roles: ["capsule"] },
+    { id: "hero", label: "Heroes", roles: ["hero", "header"] },
+    { id: "logo", label: "Logos", roles: ["logo"] },
+    { id: "icon", label: "Icons", roles: ["icon", "client_icon"] },
+    {
+      id: "other",
+      label: "More",
+      roles: ["store_image", "in_game_image", "promotional_artwork", "trailer"],
+    },
+  ];
+  const group = groups.find((item) => item.id === category)!;
+  const rank: Record<string, number> = {
+    capsule: 0,
+    hero: 1,
+    header: 2,
+    logo: 3,
+    icon: 4,
+    client_icon: 5,
+  };
+  const visible = (
+    category === "all"
+      ? versions
+      : versions.filter((version) => group.roles.includes(version.role))
+  )
+    .slice()
+    .sort((a, b) => (rank[a.role] ?? 6) - (rank[b.role] ?? 6));
+  const hero =
+    versions.find(
+      (version) => version.role === "hero" && version.storageVerified,
+    ) ??
+    versions.find(
+      (version) => version.role === "header" && version.storageVerified,
+    );
   return (
-    <section aria-label={`Published versions for ${title}`}>
-      <h3>Published asset versions</h3>
-      <p role="status">{busy ? "Loading published versions…" : error}</p>
-      {!busy && !error && !versions.length ? (
-        <p>No published versions are available yet.</p>
-      ) : null}
-      <ul>
-        {versions.map((version) => (
-          <li key={version.id}>
-            <strong>{version.role.replaceAll("_", " ")}</strong> · Revision{" "}
-            {version.revision}
-            <br />
-            <small>
-              {version.credit.label} ·{" "}
-              {version.languageKind === "global"
-                ? "Global"
-                : version.languages.join(", ")}{" "}
-              ·{" "}
-              <time dateTime={version.createdAt}>
-                {new Date(version.createdAt).toLocaleDateString()}
-              </time>
-            </small>
+    <section
+      className="game-gallery"
+      aria-label={`Published versions for ${title}`}
+    >
+      <div className="game-gallery-hero">
+        {hero && (
+          <img src={`/api/v1/asset-versions/${hero.id}/display`} alt="" />
+        )}
+        <div className="game-gallery-hero-content">
+          <p className="game-gallery-eyebrow">
+            <Layers3 size={15} aria-hidden="true" /> Artwork collection
+          </p>
+          <p>Explore published artwork for this game.</p>
+          {platforms.length > 0 && (
+            <div className="game-platforms" aria-label="Game platforms">
+              <Gamepad2 size={15} aria-hidden="true" />
+              {platforms.map((platform) => (
+                <span key={platform}>{platform}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="game-gallery-toolbar">
+        <div>
+          <h3>Artwork</h3>
+          <p>Browse by asset type</p>
+        </div>
+        <span role="status">
+          {error || (busy ? "Updating…" : `${versions.length} loaded`)}
+        </span>
+      </div>
+      <nav className="artwork-filters" aria-label="Artwork type">
+        {groups
+          .filter(
+            (item) =>
+              item.id === "all" ||
+              versions.some((version) => item.roles.includes(version.role)),
+          )
+          .map((item) => (
+            <button
+              type="button"
+              key={item.id}
+              aria-pressed={category === item.id}
+              onClick={() => setCategory(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+      </nav>
+      {!busy && !error && !versions.length && (
+        <p>No published artwork is available yet.</p>
+      )}
+      <ul className="artwork-gallery">
+        {visible.map((version) => (
+          <li key={version.id} className="artwork-gallery-item">
             <AssetFile
               versionId={version.id}
               label={version.role.replaceAll("_", " ")}
               available={version.storageVerified && version.role !== "trailer"}
+              initialPreview
+              fixedPreview
             />
+            <div className="artwork-card-content">
+              <div className="artwork-card-title">
+                <strong>{version.role.replaceAll("_", " ")}</strong>
+                <span>Revision {version.revision}</span>
+              </div>
+              <div className="artwork-tags">
+                <span>
+                  <Globe2 size={13} aria-hidden="true" />
+                  {version.languageKind === "global"
+                    ? "Global"
+                    : version.languages.join(", ")}
+                </span>
+              </div>
+              <div className="artwork-author">
+                <span className="artwork-avatar" aria-hidden="true">
+                  {version.credit.label.trim().charAt(0).toUpperCase() || "?"}
+                </span>
+                <span>{version.credit.label}</span>
+                <time dateTime={version.createdAt}>
+                  {new Date(version.createdAt).toLocaleDateString()}
+                </time>
+              </div>
+            </div>
           </li>
         ))}
       </ul>
-      {cursor ? (
-        <button disabled={busy} onClick={() => void load(cursor)}>
+      {cursor && (
+        <button
+          className="artwork-load-more"
+          disabled={busy}
+          onClick={() => void load(cursor)}
+        >
           Load more published versions
         </button>
-      ) : null}
+      )}
     </section>
   );
 }

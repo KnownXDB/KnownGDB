@@ -13,16 +13,18 @@ uses a separate local cookie name without Secure. Local host ports share cookies
 so the two development frontends can share an account session. Different hosts
 have independent cookies. Do not run untrusted applications on the same local host.
 
-Cookies expire at an absolute seven-day deadline. The API renews upstream access
+Cookies expire at an absolute thirty-day deadline for new sign-ins. The API renews upstream access
 within sixty seconds of expiry using the refresh token and rotates the encrypted
 cookie without extending that deadline. Concurrent renewals share an in-flight
 promise per session within a server process. Separate instances rely on the
 upstream refresh-token reuse protections; production concurrency still needs
-hosted validation. No session database migration or Auth configuration change
+hosted validation. Existing cookies retain their original deadlines until sign-in.
+The longer lifetime increases the window for replay of a stolen cookie; it does
+not replace MFA, server-side session checks, or explicit sign-out. No session database migration or Auth configuration change
 is required. Invalid, tampered or expired cookies fail closed and are removed.
 Temporary upstream failures preserve the cookie for retry.
 
-The frontend restores `/api/v1/account/session` on mount and checks it every minute.
+The frontend restores `/api/v1/account/session` on mount and checks it every five minutes while visible and when the tab becomes visible.
 That single request verifies identity once and fetches profile and active role in
 parallel. It returns only public profile fields and the verified role. Restoration
 does not chain separate profile and administrative session requests. A static,

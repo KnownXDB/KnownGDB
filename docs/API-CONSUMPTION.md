@@ -20,6 +20,12 @@ update the consuming service, verify a successful request, then revoke the old
 key in the account view. Revocation applies to subsequent authorization checks;
 already authorized requests may finish.
 
+The local key-management update adds icon controls to rename or permanently
+delete an owned key, including revoked keys. Deleting an active key prevents
+subsequent authorization and may interrupt integrations; already authorized
+requests may finish. The key secret cannot be recovered. These controls require
+the pending account-key-management database migration in the target environment.
+
 ## Read the catalog
 
 Replace the origin with the actual deployed API origin. Local development uses
@@ -63,7 +69,9 @@ the same-origin `Origin` header when authenticated by cookie.
 | `/api/v1/account/api-keys` | GET | none | `keys` metadata, never hashes or secrets |
 | `/api/v1/account/api-keys` | POST | `name`, optional `expiresAt` | `id`, `name`, `prefix`, `scope`, `expiresAt`, one-time `key` |
 | `/api/v1/account/api-keys` | PATCH | `id`, `expiresAt` | `updated`, restricted to active keys owned by the account |
+| `/api/v1/account/api-keys` | PATCH | `id`, `name` | `updated`, restricted to keys owned by the account |
 | `/api/v1/account/api-keys` | DELETE | `id` | idempotent `revoked: true`, restricted to the owner |
+| `/api/v1/account/api-keys` | DELETE | `id`, `permanent: true` | `deleted`, permanently removes an owned key |
 
 `expiresAt` is `null` for no expiration, or a future UTC ISO timestamp such as
 `2027-12-31T23:59:59.000Z`. Omitting it on creation means no expiration. Revoked

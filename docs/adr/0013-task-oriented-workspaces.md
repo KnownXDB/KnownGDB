@@ -18,27 +18,33 @@ forms remain in their respective web/admin entry points.
 
 ## Views
 
-Hash navigation keeps local development and the existing hosted SPA entry points
-compatible without introducing a router dependency or new server rewrites.
-Links support reload, browser history and opening a game in a separate tab.
+Path-based navigation uses browser history and the existing web/admin SPA
+fallbacks, without a router dependency. Existing hash routes are converted to
+paths on entry. Links support reload, browser history and opening a game in a
+separate tab; authentication recovery fragments remain separate.
 
 | Application | View | Task |
 | --- | --- | --- |
-| Admin | `#/games` | Filter the administrative game list and choose a record |
-| Admin | `#/games/new` | Create a canonical draft, then open its editor |
-| Admin | `#/games/:id` | Edit Overview, Companies, Releases, Languages, Classification or Review & save |
-| Admin | `#/games/:id/visibility` | Explicitly change game visibility with the existing confirmation |
-| Admin | `#/uploads` | Submit a private original using the existing upload workflow |
-| Admin | `#/moderation` | Select one version from the asset queue, then inspect/review/publish |
-| Both | `#/account` | Sign in, recover an account and manage public profile/identity |
-| Web | `#/browse` | Search the actual published catalog |
-| Web | `#/games/:id/:language` | View assets or reviewed game information in separate sections |
-| Web | `#/submit` | Submit an original without unrelated account/editor forms |
+| Admin | `/admin/games` | Filter the administrative game list and choose a record |
+| Admin | `/admin/games/new` | Create a canonical draft, then open its editor |
+| Admin | `/admin/games/:id` | Edit Overview, Companies, Releases, Languages, Classification or Review & save |
+| Admin | `/admin/games/:id/visibility` | Explicitly change game visibility with the existing confirmation |
+| Admin | `/admin/uploads` | Submit a private original using the existing upload workflow |
+| Admin | `/admin/moderation` | Select one version from the asset queue, then inspect/review/publish |
+| Both | `/account` or `/admin/account` | Sign in, recover an account and manage public profile/identity |
+| Web | `/` | Search the actual published catalog; legacy `/browse` links resolve to `/` |
+| Web | `/games/:id/:language` | View assets or reviewed game information in separate sections |
+| Web | `/submit` | Submit an original without unrelated account/editor forms |
 
-Account session logic stays mounted so hiding the account form does not discard
-session restoration or revocation events. Recovery links retain their existing
+The administrative account session stays mounted while navigating the workspace;
+the public account loads when its view opens. Recovery links retain their existing
 fragment-consumption behavior and show the account view. Administration remains
-gated by the verified role, including when opening a direct hash URL.
+gated by the verified role, including when opening a direct URL. The public
+navigation shows an admin shortcut only after the server confirms an active
+Super Admin or moderator role; session changes update the shortcut. The asset
+gallery groups loaded versions by type, shows language and public credit, and
+shows game platforms only from approved metadata. Contributor initials are a
+fallback, not an uploaded profile image.
 
 ## Editing and preservation
 
@@ -51,8 +57,9 @@ for the offending control. The explicit API remains the authoritative validator.
 Save and approval remain separate. Audit evidence and change reasons belong to
 Review & save. Catalog-term creation is collapsed and available in the sections
 that use those terms. The action bar identifies unsaved state and stays reachable
-within the content scroller. Metadata and upload drafts warn before navigation or
-reload discards them; confirmed departure can abort an in-flight upload, retaining
+within the content scroller. Metadata and upload drafts warn before in-app navigation discards them. Browser
+reload and tab closure cannot show the application modal. Confirmed departure can
+abort an in-flight upload, retaining
 the existing reserved-original recovery behavior on the server.
 
 Game visibility is a separate view. Moderation presents game titles and one

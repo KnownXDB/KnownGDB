@@ -44,6 +44,13 @@ The explicit ESM entry and prebundle avoid a verified Windows packaging collisio
 direct Netlify packaging of the workspace dependency generated duplicate function
 archive paths and replaced the API handler with shared-contract exports.
 
+The image processor requires Linux x64 native packages in the function artifact.
+On a Windows workstation, run `node scripts/prepare-netlify-linux.mjs` before
+the deploy. It downloads the versions pinned in the lockfile and verifies their
+SHA-512 integrity before extracting them into the ignored dependency directory.
+The Netlify configuration includes these files in the function bundle. Deploy a
+draft first and verify API health and image transformation before production.
+
 With authenticated Netlify CLI 27.12.0, run this PowerShell command from the root:
 
 ```powershell
