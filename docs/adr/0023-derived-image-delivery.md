@@ -19,11 +19,18 @@ input limit. Derivatives are generated lazily and retained in a process-local,
 variant. Cache loss or a cold server requires another original read and transform;
 the cache is not shared or persistent and does not write to storage.
 
-Every request, including cache hits and conditional requests, rechecks the current
+Every request that reaches the API, including server-cache hits and conditional requests, rechecks the current
 publication, moderation, game and rights state or the administrative session.
-Public derivatives use `private, no-cache` with an ETag so a browser may reuse
-bytes only after revalidation; administrator responses remain `private, no-store`.
-A withdrawn or otherwise ineligible version returns 404 even if bytes are cached.
+Public derivatives use `private, max-age=300, must-revalidate` with an ETag.
+A browser can reuse a previously public image for at most five minutes without a
+server request, including after withdrawal; after expiry it must revalidate and
+an ineligible version returns 404. Administrator responses remain `private,
+no-store`. The catalog stores up to twelve public artwork references in session
+storage for five minutes, preloads them and refreshes them against the API. Cached
+references never grant access to private versions or change API authorization.
+The visible catalog and gallery refresh public metadata every minute and when a tab becomes
+visible; if the artwork lookup fails, cached references are removed from view.
+A background tab may not execute timers until it becomes visible again.
 Originals retain their existing no-store behavior. This does not provide CDN edge
 caching, protect bytes already saved by a recipient, or eliminate database latency.
 

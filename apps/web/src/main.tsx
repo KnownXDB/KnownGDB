@@ -22,7 +22,81 @@ type Artwork = {
   languageKind: string;
   languages: string[];
 };
-function GameCard({ game, artwork }: { game: GameSummary; artwork?: Artwork }) {
+const artworkHintsKey = "knowngdb.catalog.artwork-hints.v2";
+const artworkId =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const artworkHintLifetime = 5 * 60_000;
+function readArtworkHints(): Artwork[] {
+  try {
+    const data = JSON.parse(sessionStorage.getItem(artworkHintsKey) ?? "null");
+    if (
+      !data ||
+      !Number.isFinite(data.savedAt) ||
+      data.savedAt > Date.now() ||
+      Date.now() - data.savedAt >= artworkHintLifetime ||
+      !Array.isArray(data.artwork)
+    )
+      return [];
+    return data.artwork
+      .slice(0, 12)
+      .filter(
+        (item: Artwork) =>
+          item &&
+          typeof item.gameId === "string" &&
+          artworkId.test(item.gameId) &&
+          typeof item.versionId === "string" &&
+          artworkId.test(item.versionId) &&
+          ["capsule", "header", "hero"].includes(item.role) &&
+          ["global", "localized"].includes(item.languageKind) &&
+          Array.isArray(item.languages) &&
+          item.languages.every(
+            (language: unknown) => typeof language === "string",
+          ),
+      );
+  } catch {
+    return [];
+  }
+}
+function preloadArtworkHints() {
+  for (const item of readArtworkHints()) {
+    const image = new Image();
+    image.src = `/api/v1/asset-versions/${item.versionId}/thumbnail`;
+  }
+}
+function rememberArtworkHints(games: GameSummary[], artwork: Artwork[]) {
+  try {
+    const ranks: Record<string, number> = { capsule: 0, header: 1, hero: 2 };
+    const selected = games.flatMap((game) => {
+      const item = artwork
+        .filter(
+          (item) =>
+            item.gameId === game.id &&
+            (item.languageKind === "global" ||
+              item.languages.some(
+                (language) =>
+                  language.toLowerCase() === game.language.toLowerCase(),
+              )),
+        )
+        .sort((a, b) => (ranks[a.role] ?? 9) - (ranks[b.role] ?? 9))[0];
+      return item && artworkId.test(item.versionId) ? [item] : [];
+    });
+    sessionStorage.setItem(
+      artworkHintsKey,
+      JSON.stringify({ savedAt: Date.now(), artwork: selected.slice(0, 12) }),
+    );
+  } catch {
+    // The catalog remains functional without browser storage.
+  }
+}
+function GameCard({
+  game,
+  artwork,
+  artworkPending,
+}: {
+  game: GameSummary;
+  artwork?: Artwork;
+  artworkPending: boolean;
+}) {
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
@@ -42,6 +116,8 @@ function GameCard({ game, artwork }: { game: GameSummary; artwork?: Artwork }) {
             decoding="async"
             onError={() => setFailed(true)}
           />
+        ) : artworkPending && !failed ? (
+          <span className="catalog-card-loading" aria-hidden="true" />
         ) : (
           <span className="catalog-card-placeholder">
             <ImageOff size={24} aria-hidden="true" />
@@ -106,7 +182,29 @@ function App() {
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true),
     [detailTab, setDetailTab] = useState("assets"),
-    [artwork, setArtwork] = useState<Artwork[]>([]);
+    [artwork, setArtwork] = useState<Artwork[]>([]),
+    [artworkPending, setArtworkPending] = useState(true),
+    [catalogRevision, setCatalogRevision] = useState(0);
+  useEffect(() => {
+    if (
+      window.location.pathname === "/" ||
+      window.location.pathname === "/browse"
+    )
+      preloadArtworkHints();
+  }, []);
+  useEffect(() => {
+    if (route !== "/") return;
+    const refresh = () => {
+      if (document.visibilityState === "visible")
+        setCatalogRevision((value) => value + 1);
+    };
+    const timer = window.setInterval(refresh, 60_000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [route]);
   useEffect(() => {
     const controller = new AbortController();
     const timer = window.setTimeout(
@@ -122,7 +220,8 @@ function App() {
           if (!response.ok) throw Error(data.error || "Catalog unavailable.");
           if (controller.signal.aborted) return;
           setGames(data.games);
-          setArtwork([]);
+          setArtwork(query.trim() ? [] : readArtworkHints());
+          setArtworkPending(true);
           setLoading(false);
           const ids = [
             ...new Set<string>(data.games.map((game: GameSummary) => game.id)),
@@ -135,17 +234,27 @@ function App() {
               );
               if (pictures.ok) {
                 const result = await pictures.json();
-                if (!controller.signal.aborted) setArtwork(result.artwork);
+                if (!controller.signal.aborted) {
+                  setArtwork(result.artwork);
+                  if (!query.trim())
+                    rememberArtworkHints(data.games, result.artwork);
+                }
+              } else if (!controller.signal.aborted) {
+                setArtwork([]);
               }
             } catch {
-              /* Keep the catalog usable if artwork is unavailable. */
+              if (!controller.signal.aborted) setArtwork([]);
             }
           }
+          if (!controller.signal.aborted) setArtworkPending(false);
         } catch (error) {
-          if (!controller.signal.aborted)
+          if (!controller.signal.aborted) {
+            setArtwork([]);
+            setArtworkPending(false);
             setError(
               error instanceof Error ? error.message : "Catalog unavailable.",
             );
+          }
         } finally {
           if (!controller.signal.aborted) setLoading(false);
         }
@@ -156,7 +265,7 @@ function App() {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [query]);
+  }, [query, catalogRevision]);
   function search(event: FormEvent) {
     event.preventDefault();
   }
@@ -228,7 +337,11 @@ function App() {
             <ul className="catalog-grid">
               {games.map((game) => (
                 <li key={`${game.id}:${game.language}`}>
-                  <GameCard game={game} artwork={cardArtwork(game)} />
+                  <GameCard
+                    game={game}
+                    artwork={cardArtwork(game)}
+                    artworkPending={artworkPending}
+                  />
                 </li>
               ))}
             </ul>
