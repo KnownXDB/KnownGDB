@@ -96,6 +96,7 @@ consumers, distribution channels and external identifiers.
 - [Ubisoft Store official page connector](docs/adr/0020-ubisoft-official-page-connector.md)
 - [PlayStation Store official page connector](docs/adr/0021-playstation-store-connector.md)
 - [PlayStation Store live acceptance](docs/PLAYSTATION-STORE-ACCEPTANCE.md)
+- [Interface controls and feedback](docs/UI-CONTROLS.md)
 - [Local workflow](docs/LOCAL-DEVELOPMENT.md)
 - [Product policies](docs/PRODUCT-PLAN.md)
 - [Architecture decision](docs/adr/0001-local-first-foundations.md)

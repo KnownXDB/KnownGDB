@@ -4,6 +4,7 @@ import { createServer } from "node:http";
 import { createHash } from "node:crypto";
 import { once } from "node:events";
 import { S3Client } from "@aws-sdk/client-s3";
+import sharp from "sharp";
 import {
   byteRange,
   deliveryLimit,
@@ -393,5 +394,89 @@ test("S3 original reader sends only a bounded GetObject and rejects mismatched l
     server.closeAllConnections();
     server.close();
     await once(server, "close");
+  }
+});
+
+test("derivatives are bounded, cached and reauthorized before conditional responses", async () => {
+  const f = await fixture();
+  try {
+    const original = await sharp({
+      create: { width: 1600, height: 900, channels: 3, background: "#825bde" },
+    })
+      .png()
+      .toBuffer();
+    f.state.row.byte_size = original.length;
+    f.state.row.checksum_sha256 = createHash("sha256")
+      .update(original)
+      .digest("hex");
+    let reads = 0;
+    const read = async () => {
+      reads++;
+      return { bytes: original, contentType: "image/png" };
+    };
+    const thumbUrl = publicUrl.replace("/preview", "/thumbnail");
+    const first = await deliveryRequest(new Request(thumbUrl), f.env, read);
+    assert.equal(first.status, 200);
+    assert.equal(first.headers.get("Content-Type"), "image/webp");
+    assert.equal(first.headers.get("Cache-Control"), "private, no-cache");
+    const bytes = Buffer.from(await first.arrayBuffer());
+    const metadata = await sharp(bytes).metadata();
+    assert.equal(metadata.width, 480);
+    assert.equal(metadata.height, 270);
+    const etag = first.headers.get("etag")!;
+    assert.equal(reads, 1);
+    const cached = await deliveryRequest(new Request(thumbUrl), f.env, read);
+    assert.deepEqual(Buffer.from(await cached.arrayBuffer()), bytes);
+    assert.equal(reads, 1);
+    const unchanged = await deliveryRequest(
+      new Request(thumbUrl, { headers: { "If-None-Match": etag } }),
+      f.env,
+      read,
+    );
+    assert.equal(unchanged.status, 304);
+    assert.equal(reads, 1);
+    const display = await deliveryRequest(
+      new Request(thumbUrl.replace("/thumbnail", "/display")),
+      f.env,
+      read,
+    );
+    assert.equal(
+      (await sharp(Buffer.from(await display.arrayBuffer())).metadata()).width,
+      1280,
+    );
+    assert.equal(reads, 2);
+    f.state.row.publication_status = "private";
+    const revoked = await deliveryRequest(
+      new Request(thumbUrl, { headers: { "If-None-Match": etag } }),
+      f.env,
+      read,
+    );
+    assert.equal(revoked.status, 404);
+    assert.equal(reads, 2);
+    const admin = await deliveryRequest(
+      new Request(thumbUrl.replace("/api/v1/", "/api/v1/admin/"), {
+        headers: { authorization, "If-None-Match": etag },
+      }),
+      f.env,
+      read,
+    );
+    assert.equal(admin.status, 200);
+    assert.equal(admin.headers.get("Cache-Control"), "private, no-store");
+    assert.equal(reads, 2);
+    f.state.session = false;
+    assert.equal(
+      (
+        await deliveryRequest(
+          new Request(thumbUrl.replace("/api/v1/", "/api/v1/admin/"), {
+            headers: { authorization },
+          }),
+          f.env,
+          read,
+        )
+      ).status,
+      401,
+    );
+  } finally {
+    await f.close();
   }
 });

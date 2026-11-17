@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./feedback": "./src/feedback.tsx",
+    "./controls": "./src/controls.tsx",
     "./workspace": "./src/workspace.tsx",
     "./asset-file": "./src/asset-file.tsx",
     "./account": "./src/account.tsx",

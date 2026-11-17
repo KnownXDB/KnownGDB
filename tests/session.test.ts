@@ -44,6 +44,7 @@ test("cookies are authenticated, encrypted, host-only and bounded by absolute ex
   );
   const header = response.headers.get("set-cookie")!;
   assert.match(header, /^__Host-knowngdb-session=/);
+  assert.match(header, /Max-Age=2592000/);
   assert.match(header, /HttpOnly/);
   assert.match(header, /SameSite=Strict/);
   assert.match(header, /; Secure/);

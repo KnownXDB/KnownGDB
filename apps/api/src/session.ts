@@ -13,7 +13,7 @@ interface CookieSession {
   expiresAt: number;
   deadline: number;
 }
-const lifetime = 7 * 24 * 60 * 60;
+const lifetime = 30 * 24 * 60 * 60;
 const renewals = new Map<
   string,
   Promise<{

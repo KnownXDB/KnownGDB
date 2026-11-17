@@ -1,3 +1,4 @@
+import { Select } from "@knowngdb/ui/controls";
 import { useEffect, useState, type FormEvent } from "react";
 import { ChevronRight, Plus, Search } from "lucide-react";
 import { PageHeading } from "@knowngdb/ui/workspace";
@@ -84,15 +85,15 @@ export function GamesView({
       <>
         <PageHeading
           title={visibility ? "Game visibility" : "Game details"}
-          back="#/games"
-          description={game?.title ?? "Loading game…"}
+          back="/admin/games"
+          description={game?.title}
           action={
             <a
               className="button secondary"
               href={
                 visibility
-                  ? `#/games/${gameId}`
-                  : `#/games/${gameId}/visibility`
+                  ? `/admin/games/${gameId}`
+                  : `/admin/games/${gameId}/visibility`
               }
             >
               {visibility ? "Edit metadata" : "Manage visibility"}
@@ -100,11 +101,23 @@ export function GamesView({
           }
         />
         {message ? <p role="status">{message}</p> : null}
-        {!loaded ? (
-          <p>Loading game…</p>
+        {!visibility ? (
+          <GameMetadataEditor
+            key={gameId}
+            gameId={gameId}
+            role={role}
+            onChanged={onChanged}
+            onDirtyChange={onDirtyChange}
+          />
+        ) : !loaded ? (
+          <div
+            className="loading-skeleton"
+            aria-label="Loading game"
+            role="status"
+          />
         ) : !game ? (
           <p>Game not found. Return to the game list.</p>
-        ) : visibility ? (
+        ) : (
           <section className="surface narrow">
             <h2>Game visibility</h2>
             <p>
@@ -133,7 +146,7 @@ export function GamesView({
               >
                 <label>
                   New game status
-                  <select
+                  <Select
                     aria-label="New game status"
                     name="status"
                     defaultValue={game.status}
@@ -144,7 +157,7 @@ export function GamesView({
                       Published — approve primary title
                     </option>
                     <option value="withdrawn">Withdrawn</option>
-                  </select>
+                  </Select>
                 </label>
                 <label className="check-label">
                   <input type="checkbox" required disabled={busy} />I reviewed
@@ -156,14 +169,6 @@ export function GamesView({
               <p>Only Super Admins can change visibility.</p>
             )}
           </section>
-        ) : (
-          <GameMetadataEditor
-            key={gameId}
-            gameId={gameId}
-            role={role}
-            onChanged={onChanged}
-            onDirtyChange={onDirtyChange}
-          />
         )}
       </>
     );
@@ -173,7 +178,7 @@ export function GamesView({
         title="Games"
         description="Choose a game to edit its information or manage visibility."
         action={
-          <a className="button" href="#/games/new">
+          <a className="button" href="/admin/games/new">
             <Plus size={18} aria-hidden="true" />
             Add a game
           </a>
@@ -204,7 +209,11 @@ export function GamesView({
         {games
           .filter((g) => g.title.toLowerCase().includes(query.toLowerCase()))
           .map((g) => (
-            <a className="game-table-row" key={g.id} href={`#/games/${g.id}`}>
+            <a
+              className="game-table-row"
+              key={g.id}
+              href={`/admin/games/${g.id}`}
+            >
               <strong>{g.title}</strong>
               <span className={`status-tag status-${g.status}`}>
                 {g.status}
@@ -214,7 +223,11 @@ export function GamesView({
             </a>
           ))}
         {!loaded ? (
-          <p>Loading games…</p>
+          <div
+            className="loading-skeleton"
+            aria-label="Loading games"
+            role="status"
+          />
         ) : !games.some((g) =>
             g.title.toLowerCase().includes(query.toLowerCase()),
           ) ? (

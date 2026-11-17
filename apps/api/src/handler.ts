@@ -1,3 +1,4 @@
+import { catalogArtwork } from "./catalog-artwork.ts";
 import { administrativeGames } from "./games.ts";
 import {
   apiKeysRequest,
@@ -97,6 +98,8 @@ async function routeRequest(
   env: ApiEnvironment,
 ): Promise<Response> {
   const url = new URL(request.url);
+  if (url.pathname === "/api/v1/catalog/artwork")
+    return catalogArtwork(request, env);
   if (url.pathname === keyPath) return apiKeysRequest(request, env);
   if (url.pathname === consumerPath) {
     const denied = await verifyConsumerKey(request, env);

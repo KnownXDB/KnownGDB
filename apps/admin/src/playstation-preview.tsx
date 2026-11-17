@@ -1,3 +1,4 @@
+import { Select } from "@knowngdb/ui/controls";
 import { useState, type FormEvent } from "react";
 import type { AdminRole, PlayStationStorePreview } from "@knowngdb/contracts";
 
@@ -87,10 +88,10 @@ export function PlayStationPreview({ role }: { role: AdminRole }) {
       >
         <label>
           <span>Page kind</span>
-          <select name="pageKind" defaultValue="concept">
+          <Select name="pageKind" defaultValue="concept">
             <option value="concept">Concept</option>
             <option value="product">Product</option>
-          </select>
+          </Select>
         </label>
         <label>
           <span>Concept or Product ID</span>

@@ -58,7 +58,9 @@ buffering them a second time. The existing Netlify ESM adapter supports streamin
 its documented 20 MB streamed-response ceiling informed the lower image bound.
 See [Netlify Functions limits](https://docs.netlify.com/build/functions/configuration/).
 
-Large images, video transfer/playback, thumbnails, quotas and optimized range
+Derived image variants and bounded revalidating cache are described in
+[ADR 0023](0023-derived-image-delivery.md). Large images, video transfer/playback,
+quotas and optimized range
 retrieval remain separate work. Do not lift the bound to bypass a hosting limit.
 The hybrid trailer/preservation product requirement remains in the roadmap.
 

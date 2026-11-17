@@ -28,6 +28,24 @@ begin
   assert (select expires_at is not null from catalog.api_keys where id=key_id);
   update catalog.api_keys set revoked_at=null,expires_at=now()-interval '1 second' where id=key_id;
   assert not public.consume_catalog_api_key(repeat('a',64));
+  result := public.account_api_keys('00000000-0000-4000-8000-000000000031','00000000-0000-4000-8000-000000000032','RENAME',key_id,'Wrong owner',null,null,null);
+  assert (result->>'updated')::boolean = false;
+  result := public.account_api_keys('00000000-0000-4000-8000-000000000031','00000000-0000-4000-8000-000000000032','PURGE',key_id,null,null,null,null);
+  assert (result->>'deleted')::boolean = false;
+  update catalog.api_keys set expires_at=null where id=key_id;
+  assert public.consume_catalog_api_key(repeat('a',64));
+  begin
+    perform public.account_api_keys(actor,session,'RENAME',key_id,'<invalid>',null,null,null);
+    raise exception 'Unsafe key name accepted';
+  exception when invalid_parameter_value then null;
+  end;
+  result := public.account_api_keys(actor,session,'RENAME',key_id,'Renamed',null,null,null);
+  assert (result->>'updated')::boolean = true;
+  assert (select name='Renamed' from catalog.api_keys where id=key_id);
+  result := public.account_api_keys(actor,session,'PURGE',key_id,null,null,null,null);
+  assert (result->>'deleted')::boolean = true;
+  assert not exists(select 1 from catalog.api_keys where id=key_id);
+  assert not public.consume_catalog_api_key(repeat('a',64));
   update auth.sessions set not_after=now()-interval '1 second' where id=session;
   begin
     perform public.account_api_keys(actor,session,'GET',null,null,null,null);

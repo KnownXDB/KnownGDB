@@ -5,6 +5,7 @@ import {
   Workspace,
   PageHeading,
   useWorkspaceRoute,
+  navigateWorkspace,
 } from "@knowngdb/ui/workspace";
 import { Account } from "@knowngdb/ui/account";
 import { AssetSubmission } from "@knowngdb/ui/submission";
@@ -13,11 +14,12 @@ import { GamesView } from "./game-list.tsx";
 import { StoreObservations } from "./store-observations.tsx";
 import { VersionAdministration } from "./versions.tsx";
 import "@knowngdb/ui/workspace.css";
+import "./admin.css";
 function App() {
   const [role, setRole] = useState<AdminRole | null | undefined>(undefined),
     [dirty, setDirty] = useState(false),
     [revision, setRevision] = useState(0);
-  const route = useWorkspaceRoute("/games", dirty),
+  const route = useWorkspaceRoute("/games", dirty, true),
     parts = route.split("/");
   const changed = () => setRevision((v) => v + 1);
   return (
@@ -41,13 +43,13 @@ function App() {
               <PageHeading
                 title="Add a game"
                 description="Create its canonical record first. Add detailed information in the game editor."
-                back="#/games"
+                back="/admin/games"
               />
               <div className="surface narrow">
                 <GameCreation
                   onCreated={(id) => {
                     changed();
-                    window.location.hash = `/games/${id}`;
+                    navigateWorkspace(`/games/${id}`);
                   }}
                 />
               </div>
@@ -81,14 +83,14 @@ function App() {
             <>
               <PageHeading
                 title="Moderation"
-                description="Inspect one asset at a time. Review and publication remain separate actions."
+                description="Inspect each asset, then approve it privately or approve and publish it."
               />
               <VersionAdministration role={role} />
             </>
           ) : route === "/stores" ? (
             <StoreObservations role={role} />
           ) : (
-            <PageHeading title="Page not found" back="#/games" />
+            <PageHeading title="Page not found" back="/admin/games" />
           )}
         </>
       ) : null}
