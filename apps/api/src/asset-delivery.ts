@@ -170,6 +170,50 @@ function verifiedBytes(
     throw Error("Original integrity could not be verified");
   return bytes;
 }
+async function iconPngFrame(bytes: Buffer, bound: number) {
+  if (
+    bytes.length < 6 ||
+    bytes.readUInt16LE(0) !== 0 ||
+    bytes.readUInt16LE(2) !== 1
+  )
+    return null;
+  const count = bytes.readUInt16LE(4);
+  if (!count || count > 256 || 6 + count * 16 > bytes.length) return null;
+  const candidates: { bytes: Buffer; area: number }[] = [];
+  for (let index = 0; index < count; index++) {
+    const entry = 6 + index * 16;
+    const length = bytes.readUInt32LE(entry + 8);
+    const offset = bytes.readUInt32LE(entry + 12);
+    if (
+      length < 8 ||
+      offset < 6 + count * 16 ||
+      offset + length > bytes.length ||
+      !bytes
+        .subarray(offset, offset + 8)
+        .equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+    )
+      continue;
+    const frame = bytes.subarray(offset, offset + length);
+    try {
+      const metadata = await sharp(frame, {
+        limitInputPixels: 40000000,
+        failOn: "warning",
+      }).metadata();
+      if (metadata.width && metadata.height)
+        candidates.push({
+          bytes: frame,
+          area: metadata.width * metadata.height,
+        });
+    } catch {
+      // Keep searching; older icon entries may use bitmap data instead.
+    }
+  }
+  if (!candidates.length) return null;
+  const inBounds = candidates
+    .filter((frame) => frame.area <= bound * bound)
+    .sort((a, b) => b.area - a.area);
+  return (inBounds[0] ?? candidates.sort((a, b) => a.area - b.area)[0]).bytes;
+}
 export function byteRange(
   value: string | null,
   size: number,
@@ -316,12 +360,14 @@ export async function deliveryRequest(
           mime,
           row.checksum_sha256,
         );
-        if (row.extension === "ico") {
-          // ICO can contain bitmap frames unsupported by the image processor.
+        const bound = variant === "thumbnail" ? 480 : 1280;
+        const iconFrame =
+          row.extension === "ico" ? await iconPngFrame(bytes, bound) : null;
+        if (row.extension === "ico" && !iconFrame) {
+          // Bitmap icon frames are not supported by the image processor.
           image = { bytes, mime };
         } else {
-          const bound = variant === "thumbnail" ? 480 : 1280;
-          const transformed = await sharp(bytes, {
+          const transformed = await sharp(iconFrame ?? bytes, {
             limitInputPixels: 40000000,
             failOn: "warning",
           })

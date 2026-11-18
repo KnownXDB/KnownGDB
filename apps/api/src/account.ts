@@ -32,6 +32,11 @@ export async function accountRequest(
       : ["POST"];
   if (!expected.includes(request.method))
     return reply({ error: "Method not allowed." }, 405);
+  if (
+    path.endsWith("session") &&
+    !request.headers.get("authorization")?.match(/^Bearer (\S+)$/)
+  )
+    return reply({ authenticated: false, profile: null, role: null });
   if (request.method !== "GET") {
     const origin = request.headers.get("origin");
     if (origin && origin !== new URL(request.url).origin)

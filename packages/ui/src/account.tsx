@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Recovery, startsInRecovery } from "./recovery.tsx";
+import { Recovery } from "./recovery.tsx";
+import { startsInRecovery } from "./recovery-state.ts";
 import { ApiKeys } from "./api-keys.tsx";
-export { startsInRecovery } from "./recovery.tsx";
+export { startsInRecovery } from "./recovery-state.ts";
 import type { AdminRole } from "@knowngdb/contracts";
 
 // Authentication material is owned by the API's HttpOnly cookie.
@@ -53,6 +54,12 @@ export function Account({
           throw Error("Session verification is temporarily unavailable.");
         const session = await response.json();
         if (!active || revision !== sessionRevision.current) return;
+        if (session?.authenticated !== true) {
+          setSignedIn(false);
+          setRole("");
+          setName("");
+          return;
+        }
         if (loadProfile) setName(session.profile?.displayName ?? "");
         setSignedIn(true);
         setRole(admin ? (session.role ?? "") : "");

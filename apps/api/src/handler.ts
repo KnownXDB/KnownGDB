@@ -1,4 +1,7 @@
 import { catalogArtwork } from "./catalog-artwork.ts";
+import { catalogHome } from "./catalog-home.ts";
+import { catalogGame, isCatalogGameRoute } from "./catalog-game.ts";
+import { catalogFeaturedArtwork } from "./catalog-featured.ts";
 import { administrativeGames } from "./games.ts";
 import {
   apiKeysRequest,
@@ -100,6 +103,10 @@ async function routeRequest(
   const url = new URL(request.url);
   if (url.pathname === "/api/v1/catalog/artwork")
     return catalogArtwork(request, env);
+  if (url.pathname === "/api/v1/catalog/home") return catalogHome(request, env);
+  if (isCatalogGameRoute(url.pathname)) return catalogGame(request, env);
+  if (url.pathname === "/api/v1/catalog/featured-artwork")
+    return catalogFeaturedArtwork(request, env);
   if (url.pathname === keyPath) return apiKeysRequest(request, env);
   if (url.pathname === consumerPath) {
     const denied = await verifyConsumerKey(request, env);

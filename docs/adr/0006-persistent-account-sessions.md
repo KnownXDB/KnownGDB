@@ -29,6 +29,8 @@ That single request verifies identity once and fetches profile and active role i
 parallel. It returns only public profile fields and the verified role. Restoration
 does not chain separate profile and administrative session requests. A static,
 accessible placeholder reserves account space during the initial network check.
+When no session is present, session introspection returns HTTP 200 with
+`authenticated: false`; protected operations continue to reject anonymous users.
 Profile and administrative operations still verify the current identity through
 Supabase Auth; role membership is read from the database on the server. Tokens
 are not returned to normal application JavaScript or persistent browser storage.

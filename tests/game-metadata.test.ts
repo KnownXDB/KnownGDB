@@ -81,6 +81,7 @@ async function fixture() {
     active: true,
     conflict: false,
     missing: false,
+    noPublishedMetadata: false,
     calls: [] as { rpc: string; body: Record<string, unknown> }[],
   };
   const server = createServer(async (req, res) => {
@@ -106,6 +107,8 @@ async function fixture() {
       );
     if (state.conflict)
       return send({ code: "40001", message: "Private conflict details" }, 409);
+    if (rpc === "published_game_metadata" && state.noPublishedMetadata)
+      return send(null);
     if (rpc === "published_game_metadata")
       return send({
         revisionId: revision,
@@ -260,6 +263,21 @@ test("metadata API derives actors, enforces active sessions and separates save, 
     assert.equal(f.state.calls.at(-1)!.rpc, "published_game_metadata");
     f.state.active = false;
     assert.equal((await handleRequest(request(payload()), f.env)).status, 401);
+  } finally {
+    await f.close();
+  }
+});
+test("missing public game metadata is represented as empty content", async () => {
+  const f = await fixture();
+  f.state.noPublishedMetadata = true;
+  try {
+    const response = await handleRequest(
+      new Request(`http://localhost/api/v1/games/${game}/metadata`),
+      f.env,
+    );
+    assert.equal(response.status, 204);
+    assert.equal(response.headers.get("Cache-Control"), "no-store");
+    assert.equal(await response.text(), "");
   } finally {
     await f.close();
   }

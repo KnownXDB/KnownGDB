@@ -349,7 +349,13 @@ export async function metadataRequest(request: Request, env: ApiEnvironment) {
       );
     }
     if (!admin && !result.data)
-      return reply({ error: "Published metadata not found." }, 404);
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Cache-Control": "no-store",
+          "X-Content-Type-Options": "nosniff",
+        },
+      });
     return reply(
       terms
         ? request.method === "GET"

@@ -6,11 +6,11 @@ import type { VersionSummary } from "@knowngdb/contracts";
 
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const reply = (body: unknown, status = 200) =>
+const reply = (body: unknown, status = 200, cache = "no-store") =>
   Response.json(body, {
     status,
     headers: {
-      "Cache-Control": "no-store",
+      "Cache-Control": cache,
       "X-Content-Type-Options": "nosniff",
     },
   });
@@ -269,15 +269,19 @@ export async function versionRequest(
       ? versions
       : versions.filter((version) => version.rightsVerified);
     const last = rows[Math.min(limit, rows.length) - 1];
-    return reply({
-      versions: safeVersions,
-      nextCursor:
-        rows.length > limit && last
-          ? Buffer.from(
-              JSON.stringify({ createdAt: last.created_at, id: last.id }),
-            ).toString("base64url")
-          : null,
-    });
+    return reply(
+      {
+        versions: safeVersions,
+        nextCursor:
+          rows.length > limit && last
+            ? Buffer.from(
+                JSON.stringify({ createdAt: last.created_at, id: last.id }),
+              ).toString("base64url")
+            : null,
+      },
+      200,
+      admin ? "no-store" : "public, max-age=300, must-revalidate",
+    );
   } catch {
     return reply({ error: "Version service is temporarily unavailable." }, 503);
   }
