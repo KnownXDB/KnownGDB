@@ -13,8 +13,16 @@
 - Changes integrate by PR into `develop`; promote to `main` only after testing
   the integrated commit and explicitly deciding it is stable.
 - PRs belong to `@mvuljevas`; link tracked issues and validation evidence.
-- Never auto-merge, deploy, release, publish or migrate remote data. Remote
-  actions require explicit user authorization for the task.
+- Unless the user requests a different stopping point, finish each implementation
+  task by reviewing its diff, signing logical commits, running applicable checks,
+  pushing the work branch and opening a PR assigned to `@mvuljevas` into
+  `develop`. This closeout has standing maintainer authorization.
+- Wait for required CI and reviews, then merge the verified PR head into
+  `develop` with branch protections enforced. Verify the integrated commit,
+  remove merged task branches and leave the worktree clean on `develop`.
+  Preserve unrelated local work. Report any blocker that requires a maintainer.
+- Promotion to `main`, deployment, release, package publication and remote data
+  migrations require separate explicit authorization.
 - Keep commits signed and do not bypass branch protections or suppress scanners.
 - Preserve canonical game identity, provenance, confidence and moderation rules.
 - Keep external catalog/assets access behind the API; no privileged browser keys.
