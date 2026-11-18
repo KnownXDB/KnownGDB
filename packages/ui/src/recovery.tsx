@@ -1,36 +1,14 @@
 import { useEffect, useState, type FormEvent } from "react";
-
-// Consume Auth fragments before rendering; never persist or log recovery tokens.
-const fragment = new URLSearchParams(window.location.hash.slice(1));
-let initialRecovery =
-  fragment.get("type") === "recovery"
-    ? {
-        accessToken: fragment.get("access_token") ?? "",
-        refreshToken: fragment.get("refresh_token") ?? "",
-        expiresAt:
-          Number(fragment.get("expires_at")) ||
-          Date.now() / 1000 + Number(fragment.get("expires_in") || 0),
-      }
-    : null;
-const recoveryError = fragment.has("error") || fragment.has("error_code");
-if (
-  fragment.has("access_token") ||
-  fragment.has("refresh_token") ||
-  fragment.has("error") ||
-  fragment.has("error_code")
-)
-  window.history.replaceState(
-    null,
-    "",
-    window.location.pathname + window.location.search,
-  );
-fragment.delete("access_token");
-fragment.delete("refresh_token");
+import {
+  clearInitialRecovery,
+  initialRecovery,
+  recoveryError,
+} from "./recovery-state.ts";
 
 export function Recovery({ onClose }: { onClose: () => void }) {
   const [session, setSession] = useState(initialRecovery);
   useEffect(() => {
-    initialRecovery = null;
+    clearInitialRecovery();
   }, []);
   const [message, setMessage] = useState(
     recoveryError
@@ -180,9 +158,3 @@ export function Recovery({ onClose }: { onClose: () => void }) {
     </section>
   );
 }
-
-export const startsInRecovery = Boolean(
-  initialRecovery ||
-  recoveryError ||
-  new URLSearchParams(window.location.search).get("recovery") === "1",
-);

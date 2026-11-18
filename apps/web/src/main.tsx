@@ -1,5 +1,5 @@
 import { FeedbackHost } from "@knowngdb/ui/feedback";
-import { useEffect, useState, type FormEvent } from "react";
+import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
 import { createRoot } from "react-dom/client";
 import { Search, ImageOff } from "lucide-react";
 import type { GameSummary } from "@knowngdb/contracts";
@@ -8,13 +8,32 @@ import {
   PageHeading,
   useWorkspaceRoute,
 } from "@knowngdb/ui/workspace";
-import { Account, startsInRecovery } from "@knowngdb/ui/account";
-import { AssetSubmission } from "@knowngdb/ui/submission";
-import { PublishedVersions } from "./versions.tsx";
-import { PublishedGameMetadata } from "./game-metadata.tsx";
+import { startsInRecovery } from "@knowngdb/ui/recovery-state";
 import "@knowngdb/ui/workspace.css";
 import "./catalog.css";
-import { Developers } from "./developers.tsx";
+const Account = lazy(() =>
+  import("@knowngdb/ui/account").then((module) => ({
+    default: module.Account,
+  })),
+);
+const AssetSubmission = lazy(() =>
+  import("@knowngdb/ui/submission").then((module) => ({
+    default: module.AssetSubmission,
+  })),
+);
+const PublishedVersions = lazy(() =>
+  import("./versions.tsx").then((module) => ({
+    default: module.PublishedVersions,
+  })),
+);
+const PublishedGameMetadata = lazy(() =>
+  import("./game-metadata.tsx").then((module) => ({
+    default: module.PublishedGameMetadata,
+  })),
+);
+const Developers = lazy(() =>
+  import("./developers.tsx").then((module) => ({ default: module.Developers })),
+);
 type Artwork = {
   gameId: string;
   versionId: string;
@@ -92,10 +111,12 @@ function GameCard({
   game,
   artwork,
   artworkPending,
+  priority,
 }: {
   game: GameSummary;
   artwork?: Artwork;
   artworkPending: boolean;
+  priority: boolean;
 }) {
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -108,12 +129,19 @@ function GameCard({
       <div className="catalog-card-art">
         {artwork && !failed ? (
           <img
-            src={`/api/v1/asset-versions/${artwork.versionId}/thumbnail`}
+            src={
+              priority
+                ? "/api/v1/catalog/featured-artwork"
+                : `/api/v1/asset-versions/${artwork.versionId}/thumbnail`
+            }
             alt=""
             className={loaded ? "" : "is-loading"}
+            width={360}
+            height={540}
             onLoad={() => setLoaded(true)}
-            loading="lazy"
+            loading={priority ? "eager" : "lazy"}
             decoding="async"
+            fetchPriority={priority ? "high" : "auto"}
             onError={() => setFailed(true)}
           />
         ) : artworkPending && !failed ? (
@@ -206,26 +234,48 @@ function App() {
     };
   }, [route]);
   useEffect(() => {
+    const isHome = route === "/";
+    const isGame = parts[1] === "games" && Boolean(parts[2]);
+    if (!isHome && !isGame) return;
     const controller = new AbortController();
     const timer = window.setTimeout(
       async () => {
         setLoading(true);
         setError("");
         try {
+          const isSearch = isHome && Boolean(query.trim());
           const response = await fetch(
-            `/api/v1/games${query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ""}`,
+            isGame
+              ? `/api/v1/catalog/games/${encodeURIComponent(parts[2])}?language=${encodeURIComponent(parts[3] ?? "en")}`
+              : isSearch
+                ? `/api/v1/games?q=${encodeURIComponent(query.trim())}`
+                : "/api/v1/catalog/home",
             { signal: controller.signal },
           );
           const data = await response.json();
           if (!response.ok) throw Error(data.error || "Catalog unavailable.");
           if (controller.signal.aborted) return;
-          setGames(data.games);
-          setArtwork(query.trim() ? [] : readArtworkHints());
-          setArtworkPending(true);
+          const gameList: GameSummary[] = isGame
+            ? data.game
+              ? [data.game]
+              : []
+            : data.games;
+          setGames(gameList);
+          if (isHome && !isSearch) {
+            setArtwork(data.artwork);
+            rememberArtworkHints(gameList, data.artwork);
+            setArtworkPending(false);
+          } else if (isSearch) {
+            setArtwork([]);
+            setArtworkPending(true);
+          } else {
+            setArtwork([]);
+            setArtworkPending(false);
+          }
           setLoading(false);
-          const ids = [
-            ...new Set<string>(data.games.map((game: GameSummary) => game.id)),
-          ];
+          const ids = isSearch
+            ? [...new Set<string>(gameList.map((game) => game.id))]
+            : [];
           if (ids.length) {
             try {
               const pictures = await fetch(
@@ -236,8 +286,8 @@ function App() {
                 const result = await pictures.json();
                 if (!controller.signal.aborted) {
                   setArtwork(result.artwork);
-                  if (!query.trim())
-                    rememberArtworkHints(data.games, result.artwork);
+                  if (isHome && !query.trim())
+                    rememberArtworkHints(gameList, result.artwork);
                 }
               } else if (!controller.signal.aborted) {
                 setArtwork([]);
@@ -265,7 +315,7 @@ function App() {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [query, catalogRevision]);
+  }, [query, catalogRevision, route]);
   function search(event: FormEvent) {
     event.preventDefault();
   }
@@ -286,119 +336,134 @@ function App() {
   const game =
     games.find((g) => g.id === parts[2] && g.language === parts[3]) ??
     games.find((g) => g.id === parts[2]);
+  const priorityIndex = games.findIndex((item) => cardArtwork(item));
   return (
     <Workspace route={route} adminAccess={adminAccess}>
-      {route === "/account" ? (
-        <div className="account-view">
-          <PageHeading
-            title="Your account"
-            description="Sign in to contribute and manage your public profile."
-          />
-          <section className="surface">
-            <Account />
-          </section>
-        </div>
-      ) : null}
-      {route === "/" ? (
-        <>
-          <section className="catalog-hero" aria-labelledby="catalog-heading">
-            <div className="catalog-hero-inner">
-              <p className="catalog-brand">KnownGDB</p>
-              <h1 id="catalog-heading">Find your next great image.</h1>
-              <p>Explore game artwork, originals and the people behind them.</p>
-              <form className="catalog-search" onSubmit={search} role="search">
-                <label className="catalog-search-input">
-                  <Search size={22} aria-hidden="true" />
-                  <span className="sr-only">Search games</span>
-                  <input
-                    aria-label="Search games"
-                    maxLength={120}
-                    placeholder="Search games"
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                  />
-                </label>
-              </form>
-            </div>
-          </section>
-          <section className="catalog-browse" aria-labelledby="browse-heading">
-            <div className="catalog-browse-heading">
-              <div>
-                <h2 id="browse-heading">Explore games</h2>
-                <p>Browse published games and their artwork.</p>
-              </div>
-              <span role="status">
-                {error ||
-                  (loading
-                    ? "Updating…"
-                    : `${games.length} ${games.length === 1 ? "game" : "games"}`)}
-              </span>
-            </div>
-            <ul className="catalog-grid">
-              {games.map((game) => (
-                <li key={`${game.id}:${game.language}`}>
-                  <GameCard
-                    game={game}
-                    artwork={cardArtwork(game)}
-                    artworkPending={artworkPending}
-                  />
-                </li>
-              ))}
-            </ul>
-            {!loading && !error && !games.length ? (
-              <div className="empty-state">
-                <h2>No games found</h2>
-                <p>Try a different title.</p>
-              </div>
-            ) : null}
-          </section>
-        </>
-      ) : route === "/submit" ? (
-        <>
-          <PageHeading
-            title="Submit an asset"
-            description="Keep original artwork connected to its game and creator."
-          />
-          <section className="surface narrow">
-            <AssetSubmission standalone onDirtyChange={setDirty} />
-          </section>
-        </>
-      ) : parts[1] === "games" ? (
-        <>
-          <PageHeading title={game?.title ?? "Game assets"} back="/" />
-          <nav className="section-tabs" aria-label="Game information">
-            <button
-              aria-current={detailTab === "assets" ? "page" : undefined}
-              onClick={() => setDetailTab("assets")}
-            >
-              Assets
-            </button>
-            <button
-              aria-current={detailTab === "information" ? "page" : undefined}
-              onClick={() => setDetailTab("information")}
-            >
-              Game information
-            </button>
-          </nav>
-          <div
-            className={detailTab === "assets" ? "game-artwork-view" : "surface"}
-          >
-            {detailTab === "assets" ? (
-              <PublishedVersions
-                gameId={parts[2]}
-                title={game?.title ?? "Game"}
-              />
-            ) : (
-              <PublishedGameMetadata
-                gameId={parts[2]}
-                language={parts[3] ?? "en"}
-              />
-            )}
+      <Suspense fallback={<div className="route-loading" aria-hidden="true" />}>
+        {route === "/account" ? (
+          <div className="account-view">
+            <PageHeading
+              title="Your account"
+              description="Sign in to contribute and manage your public profile."
+            />
+            <section className="surface">
+              <Account />
+            </section>
           </div>
-        </>
-      ) : route !== "/account" ? (
-        <PageHeading title="Page not found" back="/" />
-      ) : null}
+        ) : null}
+        {route === "/" ? (
+          <>
+            <section className="catalog-hero" aria-labelledby="catalog-heading">
+              <div className="catalog-hero-inner">
+                <p className="catalog-brand">KnownGDB</p>
+                <h1 id="catalog-heading">Find your next great image.</h1>
+                <p>
+                  Explore game artwork, originals and the people behind them.
+                </p>
+                <form
+                  className="catalog-search"
+                  onSubmit={search}
+                  role="search"
+                >
+                  <label className="catalog-search-input">
+                    <Search size={22} aria-hidden="true" />
+                    <span className="sr-only">Search games</span>
+                    <input
+                      aria-label="Search games"
+                      maxLength={120}
+                      placeholder="Search games"
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                    />
+                  </label>
+                </form>
+              </div>
+            </section>
+            <section
+              className="catalog-browse"
+              aria-labelledby="browse-heading"
+            >
+              <div className="catalog-browse-heading">
+                <div>
+                  <h2 id="browse-heading">Explore games</h2>
+                  <p>Browse published games and their artwork.</p>
+                </div>
+                <span role="status">
+                  {error ||
+                    (loading
+                      ? "Updating…"
+                      : `${games.length} ${games.length === 1 ? "game" : "games"}`)}
+                </span>
+              </div>
+              <ul className="catalog-grid">
+                {games.map((game, index) => (
+                  <li key={`${game.id}:${game.language}`}>
+                    <GameCard
+                      game={game}
+                      artwork={cardArtwork(game)}
+                      artworkPending={artworkPending}
+                      priority={index === priorityIndex}
+                    />
+                  </li>
+                ))}
+              </ul>
+              {!loading && !error && !games.length ? (
+                <div className="empty-state">
+                  <h2>No games found</h2>
+                  <p>Try a different title.</p>
+                </div>
+              ) : null}
+            </section>
+          </>
+        ) : route === "/submit" ? (
+          <>
+            <PageHeading
+              title="Submit an asset"
+              description="Keep original artwork connected to its game and creator."
+            />
+            <section className="surface narrow">
+              <AssetSubmission standalone onDirtyChange={setDirty} />
+            </section>
+          </>
+        ) : parts[1] === "games" ? (
+          <>
+            <PageHeading title={game?.title ?? "Game assets"} back="/" />
+            <nav className="section-tabs" aria-label="Game information">
+              <button
+                aria-current={detailTab === "assets" ? "page" : undefined}
+                onClick={() => setDetailTab("assets")}
+              >
+                Assets
+              </button>
+              <button
+                aria-current={detailTab === "information" ? "page" : undefined}
+                onClick={() => setDetailTab("information")}
+              >
+                Game information
+              </button>
+            </nav>
+            <div
+              className={
+                detailTab === "assets" ? "game-artwork-view" : "surface"
+              }
+            >
+              {detailTab === "assets" ? (
+                <PublishedVersions
+                  gameId={parts[2]}
+                  title={game?.title ?? "Game"}
+                />
+              ) : (
+                <PublishedGameMetadata
+                  gameId={parts[2]}
+                  language={parts[3] ?? "en"}
+                />
+              )}
+            </div>
+          </>
+        ) : route !== "/account" ? (
+          <PageHeading title="Page not found" back="/" />
+        ) : null}
+      </Suspense>
     </Workspace>
   );
 }
@@ -407,7 +472,9 @@ createRoot(document.getElementById("root")!).render(
     <>
       {" "}
       <FeedbackHost />
-      <Developers />{" "}
+      <Suspense fallback={<div className="route-loading" aria-hidden="true" />}>
+        <Developers />
+      </Suspense>{" "}
     </>
   ) : (
     <App />

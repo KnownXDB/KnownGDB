@@ -103,14 +103,15 @@ export function PublishedVersions({
     void fetch(`/api/v1/games/${encodeURIComponent(gameId)}/metadata`, {
       signal: controller.signal,
     })
-      .then(async (response) =>
-        response.ok
+      .then(async (response) => {
+        if (response.status === 204) return null;
+        return response.ok
           ? ((await response.json()) as {
               data: GameMetadata;
               terms: CatalogTerm[];
             })
-          : null,
-      )
+          : null;
+      })
       .then((result) => {
         if (!result || controller.signal.aborted) return;
         const names = new Map(
@@ -176,7 +177,12 @@ export function PublishedVersions({
     >
       <div className="game-gallery-hero">
         {hero && (
-          <img src={`/api/v1/asset-versions/${hero.id}/display`} alt="" />
+          <img
+            src="/api/v1/catalog/featured-artwork"
+            alt=""
+            loading="eager"
+            fetchPriority="high"
+          />
         )}
         <div className="game-gallery-hero-content">
           <p className="game-gallery-eyebrow">
@@ -195,7 +201,7 @@ export function PublishedVersions({
       </div>
       <div className="game-gallery-toolbar">
         <div>
-          <h3>Artwork</h3>
+          <h2>Artwork</h2>
           <p>Browse by asset type</p>
         </div>
         <span role="status">
@@ -232,6 +238,7 @@ export function PublishedVersions({
               available={version.storageVerified && version.role !== "trailer"}
               initialPreview
               fixedPreview
+              previewVariant="thumbnail"
             />
             <div className="artwork-card-content">
               <div className="artwork-card-title">

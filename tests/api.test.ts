@@ -15,6 +15,91 @@ test("health works without hosted credentials and domain reads fail closed", asy
       .status,
     503,
   );
+  assert.equal(
+    (
+      await handleRequest(
+        new Request("http://localhost/api/v1/catalog/home"),
+        {},
+      )
+    ).status,
+    503,
+  );
+  assert.equal(
+    (
+      await handleRequest(
+        new Request("http://localhost/api/v1/catalog/home", {
+          method: "POST",
+        }),
+        {},
+      )
+    ).status,
+    405,
+  );
+});
+test("direct published game lookup validates requests without exposing drafts", async () => {
+  const path =
+    "/api/v1/catalog/games/00000000-0000-4000-8000-000000000003?language=en";
+  assert.equal(
+    (
+      await handleRequest(
+        new Request(`http://localhost${path}`, { method: "POST" }),
+        {},
+      )
+    ).status,
+    405,
+  );
+  assert.equal(
+    (
+      await handleRequest(
+        new Request(
+          "http://localhost/api/v1/catalog/games/invalid?language=en",
+        ),
+        {},
+      )
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await handleRequest(
+        new Request(
+          "http://localhost/api/v1/catalog/games/00000000-0000-4000-8000-000000000003?language=invalid_tag",
+        ),
+        {},
+      )
+    ).status,
+    400,
+  );
+  assert.equal(
+    (await handleRequest(new Request(`http://localhost${path}`), {})).status,
+    503,
+  );
+});
+test("featured image preloads vary by page and skip unrelated routes", async () => {
+  const response = await handleRequest(
+    new Request("http://localhost/api/v1/catalog/featured-artwork", {
+      headers: { Referer: "http://localhost/account" },
+    }),
+    {},
+  );
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("Content-Type"), "image/svg+xml");
+  assert.match(response.headers.get("Vary") ?? "", /referer/i);
+  assert.equal(
+    response.headers.get("Cache-Control"),
+    "private, max-age=60, must-revalidate",
+  );
+  assert.equal(
+    (
+      await handleRequest(
+        new Request("http://localhost/api/v1/catalog/featured-artwork", {
+          method: "POST",
+        }),
+        {},
+      )
+    ).status,
+    405,
+  );
 });
 test("administration does not expose data without configured authentication", async () => {
   assert.equal(

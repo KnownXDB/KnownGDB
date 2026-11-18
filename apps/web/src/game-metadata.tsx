@@ -19,6 +19,10 @@ export function PublishedGameMetadata({
     setMessage("");
     fetch(`/api/v1/games/${gameId}/metadata`, { signal: controller.signal })
       .then(async (response) => {
+        if (response.status === 204) {
+          setMessage("No reviewed game metadata is available yet.");
+          return;
+        }
         if (response.status === 404) {
           setMessage("No reviewed game metadata is available yet.");
           return;
@@ -51,7 +55,7 @@ export function PublishedGameMetadata({
     v === null ? "Unknown" : v ? "Supported" : "Not supported";
   return (
     <section aria-label="Reviewed game information">
-      <h3>Game information</h3>
+      <h2>Game information</h2>
       <p>Information language: {localized?.language ?? "Unknown"}</p>
       {localized?.summary ? <p>{localized.summary}</p> : null}
       {localized?.description ? (
