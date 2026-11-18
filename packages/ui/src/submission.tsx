@@ -54,9 +54,12 @@ export function AssetSubmission({
   }, [hasChanges, onDirtyChange]);
   useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
   const [busy, setBusy] = useState(false),
-    [ready, setReady] = useState(false),
+    [access, setAccess] = useState<"loading" | "anonymous" | "ready" | "error">(
+      "loading",
+    ),
     [message, setMessage] = useState(""),
     [collection, setCollection] = useState("");
+  const ready = access === "ready";
   const pending = useRef<{ id: string; file: File } | null>(null);
   const controller = useRef<AbortController | null>(null);
   const selected = collections.find((c) => c.id === collection);
@@ -66,7 +69,8 @@ export function AssetSubmission({
       controller.current?.abort();
       pending.current = null;
       setCollection("");
-      setReady(false);
+      setAccess("loading");
+      setHasChanges(false);
       setMessage("");
       setAccountRevision((value) => value + 1);
     };
@@ -84,39 +88,48 @@ export function AssetSubmission({
   useEffect(() => {
     if (!open) return;
     const abort = new AbortController();
-    setReady(false);
-    Promise.all([
-      fetch(role ? "/api/v1/admin/games" : "/api/v1/games", {
+    setAccess("loading");
+    setMessage("");
+    async function load() {
+      const options = await fetch("/api/v1/submissions", {
         signal: abort.signal,
-      }).then((r) => {
-        if (!r.ok) throw Error("Game selection is temporarily unavailable.");
-        return r.json();
-      }),
-      fetch("/api/v1/submissions", { signal: abort.signal }).then(async (r) => {
-        const d = await r.json();
-        if (!r.ok)
-          throw Error(
-            d.error ||
-              "Sign in and save your public profile before submitting.",
-          );
-        return d;
-      }),
-    ])
-      .then(([catalog, own]) => {
-        if (!abort.signal.aborted) {
-          setGames(
-            (catalog.games ?? []).filter(
-              (game: GameSummary & { status?: string }) =>
-                game.status !== "withdrawn",
-            ),
-          );
-          setCollections(own.collections ?? []);
-          setReady(true);
-        }
-      })
-      .catch((e) => {
-        if (!abort.signal.aborted) setMessage(e.message);
       });
+      if (abort.signal.aborted) return;
+      if (options.status === 401) {
+        setAccess("anonymous");
+        return;
+      }
+      const own = await options.json();
+      if (!options.ok)
+        throw Error(
+          own.error || "Submission options are temporarily unavailable.",
+        );
+      const response = await fetch(
+        role ? "/api/v1/admin/games" : "/api/v1/games",
+        { signal: abort.signal },
+      );
+      if (!response.ok)
+        throw Error("Game selection is temporarily unavailable.");
+      const catalog = await response.json();
+      if (abort.signal.aborted) return;
+      setGames(
+        (catalog.games ?? []).filter(
+          (game: GameSummary & { status?: string }) =>
+            game.status !== "withdrawn",
+        ),
+      );
+      setCollections(own.collections ?? []);
+      setAccess("ready");
+    }
+    void load().catch((error) => {
+      if (abort.signal.aborted) return;
+      setAccess("error");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Submission options are temporarily unavailable.",
+      );
+    });
     return () => abort.abort();
   }, [open, accountRevision, role, catalogRevision]);
   useEffect(() => () => controller.current?.abort(), []);
@@ -233,25 +246,35 @@ export function AssetSubmission({
           {open ? "Close submission" : "Submit an image"}
         </button>
       ) : null}
-      {open ? (
+      {open && !ready ? (
+        access === "anonymous" ? (
+          <p>
+            <a href="/account">Sign in or create an account</a> to submit an
+            asset.
+          </p>
+        ) : (
+          <>
+            <p role="status">
+              {access === "error" ? message : "Checking submission access…"}
+            </p>
+            {access === "error" && (
+              <button
+                type="button"
+                onClick={() => setAccountRevision((value) => value + 1)}
+              >
+                Retry submission options
+              </button>
+            )}
+          </>
+        )
+      ) : open ? (
         <>
           <h2>Submit an original image</h2>
           <p>
-            Sign in and save a public contributor name first. PNG, JPEG and
-            client ICO originals up to 4 MiB are supported. Submissions stay
-            private until reviewed and explicitly published.
+            PNG, JPEG and client ICO originals up to 4 MiB are supported.
+            Submissions stay private until reviewed and explicitly published.
           </p>
-          <p role="status">
-            {message || (!ready ? "Loading submission options…" : "")}
-          </p>
-          {!ready && message ? (
-            <button
-              type="button"
-              onClick={() => setAccountRevision((value) => value + 1)}
-            >
-              Retry submission options
-            </button>
-          ) : null}
+          <p role="status">{message}</p>
           {pending.current ? (
             <p>
               The original is reserved. Retry with the same file without
