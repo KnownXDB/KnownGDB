@@ -1,7 +1,7 @@
 # Git workflow
 
 `develop` is the default branch and integration environment. `main` contains
-manually promoted stable integrations. There are no automatic merges, releases,
+manually promoted stable integrations. Completed tasks use the reviewed PR closeout below. There are no automatic releases,
 deployments, previews or database migrations.
 Dependency updates also remain explicit work; no scheduled bot PR creation is
 configured. Review and update pinned tools/actions through ordinary work PRs.
