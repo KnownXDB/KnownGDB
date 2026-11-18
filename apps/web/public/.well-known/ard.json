@@ -1,0 +1,18 @@
+{
+  "entries": [
+    {
+      "identifier": "urn:air:knowngdb.netlify.app:api:published-catalog",
+      "displayName": "KnownGDB Published Catalog API",
+      "type": "application/vnd.knowngdb.catalog+json",
+      "url": "https://knowngdb.netlify.app/developers",
+      "description": "Read-only access to published canonical video game records and their verified artwork metadata. Consumer access requires an API key.",
+      "capabilities": ["published-game-search", "verified-artwork-metadata"],
+      "representativeQueries": [
+        "Search the published game catalog",
+        "Find verified artwork for a game",
+        "Read localized game titles"
+      ],
+      "tags": ["video games", "game catalog", "artwork"]
+    }
+  ]
+}

@@ -62,6 +62,15 @@ test("account writes reject cross-origin, malformed and unauthenticated input", 
   );
   assert.equal((await handleRequest(request("profile"), env)).status, 401);
 });
+test("anonymous session introspection is a normal unauthenticated response", async () => {
+  const response = await handleRequest(request("session"), {});
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    authenticated: false,
+    profile: null,
+    role: null,
+  });
+});
 test("profile ownership comes only from verified identity and rejects mass assignment", async () => {
   const writes: unknown[] = [];
   const id = "00000000-0000-4000-8000-000000000001";

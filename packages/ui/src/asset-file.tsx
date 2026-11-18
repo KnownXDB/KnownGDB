@@ -8,6 +8,7 @@ export function AssetFile({
   available,
   initialPreview = false,
   fixedPreview = false,
+  previewVariant = "display",
 }: {
   versionId: string;
   label: string;
@@ -15,6 +16,7 @@ export function AssetFile({
   available: boolean;
   initialPreview?: boolean;
   fixedPreview?: boolean;
+  previewVariant?: "display" | "thumbnail";
 }) {
   const [preview, setPreview] = useState(initialPreview);
   const [failedPreview, setFailedPreview] = useState(false);
@@ -123,7 +125,7 @@ export function AssetFile({
         ) : (
           <img
             className={`asset-preview ${loadedPreview ? "" : "is-loading"}`}
-            src={`${base}/display`}
+            src={`${base}/${previewVariant}`}
             alt={`${label} preview`}
             loading="lazy"
             decoding="async"

@@ -1,0 +1,13 @@
+# KnownGDB
+
+> KnownGDB is a curated catalog of canonical video game identities and published artwork.
+
+## Public pages
+
+- [Browse games](https://knowngdb.netlify.app/): Search the published catalog and explore artwork.
+- [Developer API](https://knowngdb.netlify.app/developers): Read the consumer API documentation and request a read-only key.
+
+## Public API
+
+- [Health check](https://knowngdb.netlify.app/api/v1/health): Check API availability.
+- [Published games](https://knowngdb.netlify.app/api/v1/consumer/games): Read published game identities. A consumer API key is required.

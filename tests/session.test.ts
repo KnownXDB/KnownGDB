@@ -257,10 +257,13 @@ test("cookie sessions restore, refresh, enforce CSRF and clear on sign-out", asy
     assert.equal(logout.status, 200);
     assert.equal(logoutCount, 1);
     assert.match(logout.headers.get("set-cookie")!, /Max-Age=0/);
-    assert.equal(
-      (await handleRequest(new Request(url + "session"), env)).status,
-      401,
-    );
+    const anonymous = await handleRequest(new Request(url + "session"), env);
+    assert.equal(anonymous.status, 200);
+    assert.deepEqual(await anonymous.json(), {
+      authenticated: false,
+      profile: null,
+      role: null,
+    });
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }

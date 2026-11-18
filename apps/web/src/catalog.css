@@ -2,7 +2,7 @@
   --surface: var(--palette-1c2030);
   --line: var(--palette-363b50);
   --muted: var(--palette-b4bbce);
-  --accent: var(--palette-ad8cff);
+  --accent: var(--palette-6559e9);
   color: var(--palette-f4f5fb);
   background: var(--palette-10121c);
   color-scheme: dark;
@@ -252,6 +252,12 @@
   font-size: var(--size-12);
   text-transform: capitalize;
 }
+.route-loading {
+  min-height: var(--size-230);
+  border: var(--size-1) solid var(--palette-383e53);
+  border-radius: var(--size-10);
+  background: var(--palette-1c2030);
+}
 .is-public .surface .artwork-gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(var(--size-260), 1fr));
@@ -410,7 +416,7 @@
   gap: var(--space-12);
   margin: var(--space-30) 0 var(--space-14);
 }
-.game-gallery-toolbar h3 {
+.game-gallery-toolbar h2 {
   color: var(--palette-f4f5fb);
   font-size: var(--size-22);
 }

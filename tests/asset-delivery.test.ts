@@ -38,21 +38,31 @@ const key = objectKey({
 });
 const publicUrl = `http://localhost/api/v1/asset-versions/${id}/preview`;
 const adminUrl = `http://localhost/api/v1/admin/asset-versions/${id}/preview`;
-async function fixture() {
+async function fixture(originalBytes = png, extension = "png") {
+  const assetKey = objectKey({
+    gameId: game,
+    versionId: id,
+    provenance: "official",
+    role: extension === "ico" ? "client_icon" : "logo",
+    languageKind: "localized",
+    languages: ["en"],
+    createdAt: date,
+    extension,
+  });
   const state = {
     role: "super_admin",
     session: true,
     reads: 0,
     corrupt: false,
-    contentType: "image/png",
+    contentType: extension === "ico" ? "image/x-icon" : "image/png",
     missing: false,
     row: {
       id,
       game_id: game,
-      object_key: key,
-      extension: "png",
-      checksum_sha256: createHash("sha256").update(png).digest("hex"),
-      byte_size: png.length,
+      object_key: assetKey,
+      extension,
+      checksum_sha256: createHash("sha256").update(originalBytes).digest("hex"),
+      byte_size: originalBytes.length,
       created_at: date,
       language_kind: "localized",
       language_tags: ["en"],
@@ -61,7 +71,7 @@ async function fixture() {
       storage_verified_at: date,
       rights_reference: "Private evidence",
       asset_collections: {
-        role: "logo",
+        role: extension === "ico" ? "client_icon" : "logo",
         provenance: "official",
         games: { status: "published" },
       },
@@ -94,10 +104,12 @@ async function fixture() {
     },
     read: async (k: string, size: number) => {
       state.reads++;
-      assert.equal(k, key);
-      assert.equal(size, png.length);
+      assert.equal(k, assetKey);
+      assert.equal(size, originalBytes.length);
       return {
-        bytes: state.corrupt ? Buffer.alloc(png.length) : png,
+        bytes: state.corrupt
+          ? Buffer.alloc(originalBytes.length)
+          : originalBytes,
         contentType: state.contentType,
       };
     },
@@ -479,6 +491,44 @@ test("derivatives are bounded, cached and reauthorized before conditional respon
       ).status,
       401,
     );
+  } finally {
+    await f.close();
+  }
+});
+
+test("ICO files with PNG frames receive bounded WebP thumbnails", async () => {
+  const frame = await sharp({
+    create: {
+      width: 256,
+      height: 256,
+      channels: 4,
+      background: "#6559e9",
+    },
+  })
+    .png()
+    .toBuffer();
+  const ico = Buffer.alloc(22 + frame.length);
+  ico.writeUInt16LE(1, 2);
+  ico.writeUInt16LE(1, 4);
+  ico.writeUInt16LE(1, 10);
+  ico.writeUInt16LE(32, 12);
+  ico.writeUInt32LE(frame.length, 14);
+  ico.writeUInt32LE(22, 18);
+  frame.copy(ico, 22);
+  const f = await fixture(ico, "ico");
+  try {
+    const response = await deliveryRequest(
+      new Request(publicUrl.replace("/preview", "/thumbnail")),
+      f.env,
+      f.read,
+    );
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("Content-Type"), "image/webp");
+    const thumbnail = Buffer.from(await response.arrayBuffer());
+    assert.ok(thumbnail.length < ico.length / 4);
+    const metadata = await sharp(thumbnail).metadata();
+    assert.equal(metadata.width, 256);
+    assert.equal(metadata.height, 256);
   } finally {
     await f.close();
   }

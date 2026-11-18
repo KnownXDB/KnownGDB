@@ -3,7 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KnownGDB web</title>
+    <meta
+      name="description"
+      content="Find and explore published video game artwork, original assets, and the contributors behind them."
+    />
+    <meta name="theme-color" content="#11131c" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link
+      rel="preload"
+      as="image"
+      href="/api/v1/catalog/featured-artwork"
+      fetchpriority="high"
+    />
+    <link rel="canonical" href="https://knowngdb.netlify.app/" />
+    <link rel="ard" href="/.well-known/ard.json" />
+    <title>KnownGDB — Video game artwork</title>
   </head>
   <body>
     <div id="root"></div>
