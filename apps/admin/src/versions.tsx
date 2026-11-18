@@ -6,6 +6,7 @@ import type {
   VersionPage,
   VersionSummary,
 } from "@knowngdb/contracts";
+import { VirtualizedCollection } from "@knowngdb/ui/virtualized-collection";
 
 export function VersionAdministration({ role }: { role: AdminRole }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -222,20 +223,28 @@ export function VersionAdministration({ role }: { role: AdminRole }) {
       {!loading && !versions.length ? <p>No versions to display.</p> : null}
       <div className="moderation-workspace">
         <nav className="moderation-queue" aria-label="Asset queue">
-          {versions.map((v) => (
-            <button
-              type="button"
-              key={v.id}
-              aria-current={selectedId === v.id ? "true" : undefined}
-              onClick={() => setSelectedId(v.id)}
-            >
-              <strong>{gameNames[v.gameId] ?? "Catalog game"}</strong>
-              <span>
-                {v.role.replaceAll("_", " ")} · Revision {v.revision} ·{" "}
-                {v.moderation} · {v.published ? "Published" : "Private"}
-              </span>
-            </button>
-          ))}
+          <VirtualizedCollection
+            items={versions}
+            getKey={(version) => version.id}
+            label="Asset review queue"
+            className="moderation-queue-list"
+            estimateRowSizeToken="--sys-virtual-review-row-estimate"
+            gapToken="--sys-virtual-queue-gap"
+            renderItem={(v) => (
+              <button
+                type="button"
+                key={v.id}
+                aria-current={selectedId === v.id ? "true" : undefined}
+                onClick={() => setSelectedId(v.id)}
+              >
+                <strong>{gameNames[v.gameId] ?? "Catalog game"}</strong>
+                <span>
+                  {v.role.replaceAll("_", " ")} · Revision {v.revision} ·{" "}
+                  {v.moderation} · {v.published ? "Published" : "Private"}
+                </span>
+              </button>
+            )}
+          />
         </nav>
         <div>
           {!selectedId ? (

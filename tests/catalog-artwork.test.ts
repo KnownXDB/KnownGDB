@@ -90,3 +90,55 @@ test("catalog artwork exposes only eligible public versions and validates reques
     );
   }
 });
+
+test("title views keep one catalog read even when artwork is unavailable", async () => {
+  const reads: string[] = [];
+  const gameId = "00000000-0000-4000-8000-000000000001";
+  const server = createServer((req, res) => {
+    const table = new URL(req.url!, "http://localhost").pathname;
+    reads.push(table);
+    const titles = table.endsWith("/game_localizations");
+    res.writeHead(titles ? 200 : 503, { "Content-Type": "application/json" });
+    res.end(
+      JSON.stringify(
+        titles
+          ? [
+              {
+                game_id: gameId,
+                title: "Fixture",
+                language: "en",
+                games: { item_type: "game" },
+              },
+            ]
+          : {},
+      ),
+    );
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    const address = server.address();
+    assert.ok(address && typeof address !== "string");
+    const env = {
+      SUPABASE_URL: "http://127.0.0.1:" + address.port,
+      SUPABASE_SECRET_KEY: "test-only",
+    };
+    for (const route of ["home?view=titles", "search?view=titles&q=fixture"]) {
+      const response = await handleRequest(
+        new Request("http://localhost/api/v1/catalog/" + route),
+        env,
+      );
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), {
+        games: [
+          { id: gameId, title: "Fixture", language: "en", itemType: "game" },
+        ],
+      });
+    }
+    assert.deepEqual(reads, [
+      "/rest/v1/game_localizations",
+      "/rest/v1/game_localizations",
+    ]);
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});

@@ -569,6 +569,10 @@ input[type="checkbox"] {
   flex-direction: column;
   gap: var(--space-8);
 }
+.moderation-queue-list .virtualized-collection-item > button {
+  width: 100%;
+  min-height: var(--size-72);
+}
 .moderation-queue button {
   display: flex;
   flex-direction: column;
@@ -800,6 +804,57 @@ input[type="checkbox"] {
 .simplebar-track.simplebar-vertical {
   width: var(--size-9);
 }
+.virtualized-collection {
+  position: relative;
+  display: block;
+  min-width: 0;
+  contain: layout style;
+}
+.virtualized-collection-row {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--virtualized-gap, var(--space-16));
+}
+.virtualized-collection-row.is-grid {
+  display: grid;
+  align-items: start;
+}
+.virtualized-collection-item {
+  min-width: 0;
+}
+.virtualized-collection-item > * {
+  min-width: 0;
+}
+.virtualized-collection-item[role="listitem"] > a {
+  height: 100%;
+}
+.route-pending {
+  display: flex;
+  min-height: var(--size-52);
+  align-items: center;
+  gap: var(--space-10);
+  padding: var(--space-14) var(--space-18);
+  color: var(--muted);
+  border: var(--size-1) solid var(--line);
+  border-radius: var(--size-8);
+  background: var(--surface);
+}
+.route-pending svg {
+  flex: none;
+  color: var(--accent);
+  animation: route-pending-spin 1s linear infinite;
+}
+@keyframes route-pending-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-pending svg {
+    animation: none;
+  }
+}
 @media (max-width: 800px) {
   .workspace-shell {
     grid-template-columns: minmax(0, 1fr);
@@ -857,8 +912,7 @@ input[type="checkbox"] {
     grid-template-columns: minmax(0, 1fr);
   }
   .moderation-queue {
-    flex-direction: row;
-    overflow: auto;
+    flex-direction: column;
   }
   .moderation-queue button {
     min-width: var(--size-190);

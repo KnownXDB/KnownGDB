@@ -25,12 +25,12 @@ Public derivatives use `private, max-age=300, must-revalidate` with an ETag.
 A browser can reuse a previously public image for at most five minutes without a
 server request, including after withdrawal; after expiry it must revalidate and
 an ineligible version returns 404. Administrator responses remain `private,
-no-store`. The catalog stores up to twelve public artwork references in session
-storage for five minutes, preloads them and refreshes them against the API. Cached
-references never grant access to private versions or change API authorization.
-The visible catalog and gallery refresh public metadata every minute and when a tab becomes
-visible; if the artwork lookup fails, cached references are removed from view.
-A background tab may not execute timers until it becomes visible again.
+no-store`. The public browse UI requests titles independently and then requests missing cover
+references in a batch keyed by game and localization. Successful lookups,
+including absent covers, are reusable in memory for five minutes. A failed
+lookup leaves the titles accessible. Expiration is checked on demand. The
+catalog and gallery do not poll or refresh on tab visibility changes. The
+thumbnail endpoint independently checks eligibility when reached.
 Originals retain their existing no-store behavior. This does not provide CDN edge
 caching, protect bytes already saved by a recipient, or eliminate database latency.
 

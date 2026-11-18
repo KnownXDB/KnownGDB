@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { AssetFile } from "@knowngdb/ui/asset-file";
 import type {
   VersionSummary,
@@ -7,44 +7,56 @@ import type {
   CatalogTerm,
 } from "@knowngdb/contracts";
 import { Gamepad2, Globe2, Layers3 } from "lucide-react";
+import { VirtualizedCollection } from "@knowngdb/ui/virtualized-collection";
+import {
+  fetchCatalog,
+  fetchPublicMetadata,
+  readCatalogCache,
+  versionPageKey,
+} from "./catalog/data";
 
-export function PublishedVersions({
+export const PublishedVersions = memo(function PublishedVersions({
   gameId,
   title,
 }: {
   gameId: string;
   title: string;
 }) {
-  const [versions, setVersions] = useState<VersionSummary[]>([]);
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [versions, setVersions] = useState<VersionSummary[]>(
+    () => readCatalogCache<VersionPage>(versionPageKey(gameId))?.versions ?? [],
+  );
+  const [versionsGameId, setVersionsGameId] = useState(gameId);
+  const [cursor, setCursor] = useState<string | null>(
+    () =>
+      readCatalogCache<VersionPage>(versionPageKey(gameId))?.nextCursor ?? null,
+  );
+  const [cursorGameId, setCursorGameId] = useState(gameId);
+  const [busy, setBusy] = useState(
+    () => !readCatalogCache(versionPageKey(gameId)),
+  );
   const [error, setError] = useState("");
   const [category, setCategory] = useState("all");
   const [platforms, setPlatforms] = useState<string[]>([]);
   const request = useRef<AbortController | null>(null);
-  const visibleCount = useRef(0);
-  useEffect(() => {
-    visibleCount.current = versions.length;
-  }, [versions]);
   async function load(after: string | null = null) {
     request.current?.abort();
     const current = new AbortController();
     request.current = current;
-    setBusy(true);
+    if (after || versionsGameId !== gameId || versions.length === 0)
+      setBusy(true);
     setError("");
     try {
-      const response = await fetch(
-        `/api/v1/games/${encodeURIComponent(gameId)}/asset-versions${after ? `?cursor=${encodeURIComponent(after)}` : ""}`,
-        { signal: current.signal },
+      const data = await fetchCatalog<VersionPage>(
+        versionPageKey(gameId, after),
+        current.signal,
       );
-      const data: VersionPage & { error?: string } = await response.json();
       if (current.signal.aborted) return;
-      if (!response.ok)
-        throw Error(data.error || "Published versions are unavailable.");
       setVersions((old) =>
         after ? [...old, ...data.versions] : data.versions,
       );
+      setVersionsGameId(gameId);
       setCursor(data.nextCursor);
+      setCursorGameId(gameId);
     } catch (error) {
       if (!current.signal.aborted)
         setError(
@@ -57,61 +69,20 @@ export function PublishedVersions({
       if (request.current === current) request.current = null;
     }
   }
-  async function refreshVisible() {
-    if (document.visibilityState !== "visible" || request.current) return;
-    const current = new AbortController();
-    request.current = current;
-    try {
-      const refreshed: VersionSummary[] = [];
-      let after: string | null = null;
-      let pages = 0;
-      do {
-        const response = await fetch(
-          `/api/v1/games/${encodeURIComponent(gameId)}/asset-versions${after ? `?cursor=${encodeURIComponent(after)}` : ""}`,
-          { signal: current.signal },
-        );
-        if (!response.ok) throw Error("Published versions are unavailable.");
-        const data: VersionPage = await response.json();
-        refreshed.push(...data.versions);
-        after = data.nextCursor;
-        pages++;
-      } while (after && refreshed.length < visibleCount.current && pages < 50);
-      if (!current.signal.aborted) {
-        setVersions(refreshed);
-        setCursor(after);
-        setError("");
-      }
-    } catch {
-      if (!current.signal.aborted) {
-        setVersions([]);
-        setCursor(null);
-        setError("Published versions are temporarily unavailable.");
-      }
-    } finally {
-      if (request.current === current) request.current = null;
-    }
-  }
   useEffect(() => {
-    setVersions([]);
+    const cached = readCatalogCache<VersionPage>(versionPageKey(gameId));
+    setVersions(cached?.versions ?? []);
+    setVersionsGameId(gameId);
+    setCursor(cached?.nextCursor ?? null);
+    setCursorGameId(gameId);
     setCategory("all");
     setPlatforms([]);
     void load();
-    const timer = window.setInterval(() => void refreshVisible(), 60_000);
-    const refresh = () => void refreshVisible();
-    document.addEventListener("visibilitychange", refresh);
     const controller = new AbortController();
-    void fetch(`/api/v1/games/${encodeURIComponent(gameId)}/metadata`, {
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        if (response.status === 204) return null;
-        return response.ok
-          ? ((await response.json()) as {
-              data: GameMetadata;
-              terms: CatalogTerm[];
-            })
-          : null;
-      })
+    void fetchPublicMetadata<{
+      data: GameMetadata;
+      terms: CatalogTerm[];
+    }>(`/api/v1/games/${encodeURIComponent(gameId)}/metadata`)
       .then((result) => {
         if (!result || controller.signal.aborted) return;
         const names = new Map(
@@ -129,12 +100,19 @@ export function PublishedVersions({
       })
       .catch(() => {});
     return () => {
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", refresh);
       request.current?.abort();
       controller.abort();
     };
   }, [gameId]);
+  const displayedVersions =
+    versionsGameId === gameId
+      ? versions
+      : (readCatalogCache<VersionPage>(versionPageKey(gameId))?.versions ?? []);
+  const displayedCursor =
+    cursorGameId === gameId
+      ? cursor
+      : (readCatalogCache<VersionPage>(versionPageKey(gameId))?.nextCursor ??
+        null);
   const groups = [
     { id: "all", label: "All artwork", roles: [] },
     { id: "capsule", label: "Capsules", roles: ["capsule"] },
@@ -158,16 +136,18 @@ export function PublishedVersions({
   };
   const visible = (
     category === "all"
-      ? versions
-      : versions.filter((version) => group.roles.includes(version.role))
+      ? displayedVersions
+      : displayedVersions.filter((version) =>
+          group.roles.includes(version.role),
+        )
   )
     .slice()
     .sort((a, b) => (rank[a.role] ?? 6) - (rank[b.role] ?? 6));
   const hero =
-    versions.find(
+    displayedVersions.find(
       (version) => version.role === "hero" && version.storageVerified,
     ) ??
-    versions.find(
+    displayedVersions.find(
       (version) => version.role === "header" && version.storageVerified,
     );
   return (
@@ -178,7 +158,7 @@ export function PublishedVersions({
       <div className="game-gallery-hero">
         {hero && (
           <img
-            src="/api/v1/catalog/featured-artwork"
+            src={`/api/v1/asset-versions/${hero.id}/display`}
             alt=""
             loading="eager"
             fetchPriority="high"
@@ -205,7 +185,10 @@ export function PublishedVersions({
           <p>Browse by asset type</p>
         </div>
         <span role="status">
-          {error || (busy ? "Updating…" : `${versions.length} loaded`)}
+          {error ||
+            (busy && !displayedVersions.length
+              ? "Loading artwork…"
+              : `${displayedVersions.length} loaded`)}
         </span>
       </div>
       <nav className="artwork-filters" aria-label="Artwork type">
@@ -213,7 +196,9 @@ export function PublishedVersions({
           .filter(
             (item) =>
               item.id === "all" ||
-              versions.some((version) => item.roles.includes(version.role)),
+              displayedVersions.some((version) =>
+                item.roles.includes(version.role),
+              ),
           )
           .map((item) => (
             <button
@@ -226,12 +211,21 @@ export function PublishedVersions({
             </button>
           ))}
       </nav>
-      {!busy && !error && !versions.length && (
+      {!busy && !error && !displayedVersions.length && (
         <p>No published artwork is available yet.</p>
       )}
-      <ul className="artwork-gallery">
-        {visible.map((version) => (
-          <li key={version.id} className="artwork-gallery-item">
+      <VirtualizedCollection
+        items={visible}
+        getKey={(version) => version.id}
+        label={`Published artwork for ${title}`}
+        className="artwork-gallery"
+        layout="grid"
+        minItemWidthToken="--sys-layout-artwork-card-min"
+        mobileMinItemWidthToken="--sys-layout-artwork-card-min"
+        estimateRowSizeToken="--sys-virtual-artwork-row-estimate"
+        gapToken="--sys-virtual-artwork-gap"
+        renderItem={(version) => (
+          <article className="artwork-gallery-item">
             <AssetFile
               versionId={version.id}
               label={version.role.replaceAll("_", " ")}
@@ -263,18 +257,18 @@ export function PublishedVersions({
                 </time>
               </div>
             </div>
-          </li>
-        ))}
-      </ul>
-      {cursor && (
+          </article>
+        )}
+      />
+      {displayedCursor && (
         <button
           className="artwork-load-more"
           disabled={busy}
-          onClick={() => void load(cursor)}
+          onClick={() => void load(displayedCursor)}
         >
           Load more published versions
         </button>
       )}
     </section>
   );
-}
+});

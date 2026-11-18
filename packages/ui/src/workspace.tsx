@@ -19,6 +19,53 @@ export function workspaceHref(path: string, admin = false) {
 export function navigateWorkspace(path: string) {
   window.dispatchEvent(new CustomEvent("knowngdb-navigate", { detail: path }));
 }
+
+function PublicAdminShortcut() {
+  const [allowed, setAllowed] = useState(false);
+  useEffect(() => {
+    let active = true;
+    const refresh = async () => {
+      try {
+        const response = await fetch("/api/v1/account/session", {
+          credentials: "same-origin",
+        });
+        const session = response.ok ? await response.json() : null;
+        if (active)
+          setAllowed(
+            session?.authenticated === true &&
+              ["super_admin", "moderator"].includes(session.role),
+          );
+      } catch {
+        if (active) setAllowed(false);
+      }
+    };
+    void refresh();
+    const channel =
+      typeof BroadcastChannel !== "undefined"
+        ? new BroadcastChannel("knowngdb-account")
+        : null;
+    if (channel) channel.onmessage = () => void refresh();
+    window.addEventListener("knowngdb-session-changed", refresh);
+    return () => {
+      active = false;
+      channel?.close();
+      window.removeEventListener("knowngdb-session-changed", refresh);
+    };
+  }, []);
+  if (!allowed) return null;
+  return (
+    <a
+      className="admin-shortcut"
+      href={
+        import.meta.env.DEV
+          ? `${window.location.protocol}//${window.location.hostname}:${Number(window.location.port) + 1}/admin/games`
+          : "/admin/games"
+      }
+    >
+      <ShieldCheck size={17} aria-hidden="true" /> Admin panel
+    </a>
+  );
+}
 export function useWorkspaceRoute(
   fallback: string,
   dirty = false,
@@ -198,12 +245,10 @@ export function useWorkspaceRoute(
 }
 export function Workspace({
   admin = false,
-  adminAccess = false,
   route,
   children,
 }: {
   admin?: boolean;
-  adminAccess?: boolean;
   route: string;
   children: ReactNode;
 }) {
@@ -265,18 +310,7 @@ export function Workspace({
         </nav>
         {!admin && (
           <div className="workspace-utilities">
-            {adminAccess && (
-              <a
-                className="admin-shortcut"
-                href={
-                  import.meta.env.DEV
-                    ? `${window.location.protocol}//${window.location.hostname}:${Number(window.location.port) + 1}/admin/games`
-                    : "/admin/games"
-                }
-              >
-                <ShieldCheck size={17} aria-hidden="true" /> Admin panel
-              </a>
-            )}
+            <PublicAdminShortcut />
             <a className="workspace-switch" href="/developers">
               Developer API
             </a>
