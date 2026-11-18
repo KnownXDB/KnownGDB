@@ -22,7 +22,7 @@ Only authorized maintainers receive write access.
 
 `develop` is the default branch and receives work through PRs and checks.
 `main` receives stable promotions from `develop`, with test evidence for the
-integrated commit. Merging and deployment are never automatic. See the
+integrated commit. For completed tasks, the maintainer authorizes the agent to merge the reviewed PR head into `develop` after required checks and reviews pass. Deployment requires separate authorization. See the
 [Git workflow](docs/GIT-WORKFLOW.md) and [ADR 0002](docs/adr/0002-repository-governance.md).
 Verify actual branch protections and their enforcement for administrators in GitHub.
 

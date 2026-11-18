@@ -1,7 +1,7 @@
 # Git workflow
 
 `develop` is the default branch and integration environment. `main` contains
-manually promoted stable integrations. There are no automatic merges, releases,
+manually promoted stable integrations. Completed tasks use the reviewed PR closeout below. There are no automatic releases,
 deployments, previews or database migrations.
 Dependency updates also remain explicit work; no scheduled bot PR creation is
 configured. Review and update pinned tools/actions through ordinary work PRs.
@@ -18,7 +18,7 @@ configured. Review and update pinned tools/actions through ordinary work PRs.
    pinned scanner cannot be downloaded or verified. It requires network access.
 6. Commit with a verified signature. Open a PR targeting `develop`, assigned to
    `@mvuljevas`. PR automation maintains the assignment, including external PRs.
-7. Review the exact diff and successful CI; integrate manually. Work branches
+7. As part of task closeout, review the exact diff and successful CI, then merge the verified PR head into `develop`. Work branches
    are deleted automatically after merge; protected branches are retained.
 8. Test the integrated result on `develop`. Application tests/builds become
    mandatory as application code is introduced; foundation checks alone do not
