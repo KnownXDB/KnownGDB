@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import type { CatalogTerm, GameMetadata } from "@knowngdb/contracts";
+import { fetchPublicMetadata } from "./catalog/data";
 
-export function PublishedGameMetadata({
+export const PublishedGameMetadata = memo(function PublishedGameMetadata({
   gameId,
   language,
 }: {
@@ -17,20 +18,16 @@ export function PublishedGameMetadata({
     const controller = new AbortController();
     setData(null);
     setMessage("");
-    fetch(`/api/v1/games/${gameId}/metadata`, { signal: controller.signal })
-      .then(async (response) => {
-        if (response.status === 204) {
+    fetchPublicMetadata<{ data: GameMetadata; terms: CatalogTerm[] }>(
+      `/api/v1/games/${encodeURIComponent(gameId)}/metadata`,
+    )
+      .then((result) => {
+        if (controller.signal.aborted) return;
+        if (!result) {
           setMessage("No reviewed game metadata is available yet.");
           return;
         }
-        if (response.status === 404) {
-          setMessage("No reviewed game metadata is available yet.");
-          return;
-        }
-        if (!response.ok)
-          throw Error("Game information is temporarily unavailable.");
-        const result = await response.json();
-        if (!controller.signal.aborted) setData(result);
+        setData(result);
       })
       .catch((e) => {
         if (!controller.signal.aborted) setMessage(e.message);
@@ -128,4 +125,4 @@ export function PublishedGameMetadata({
       ) : null}
     </section>
   );
-}
+});
