@@ -73,7 +73,7 @@ const migrationFiles = fs
   .readdirSync("supabase/migrations")
   .filter((name) => name.endsWith(".sql"))
   .sort();
-assert.equal(migrationFiles.length, 25);
+assert.equal(migrationFiles.length, 26);
 const sql = migrationFiles.map((file) =>
   fs.readFileSync(path.join("supabase/migrations", file), "utf8"),
 );
@@ -147,6 +147,14 @@ try {
     seedUser +
       "update catalog.admin_members set role='super_admin'; insert into catalog.games default values;",
   );
+  await fresh.query("begin");
+  try {
+    await fresh.query(
+      fs.readFileSync("supabase/tests/public-catalog-covers.sql", "utf8"),
+    );
+  } finally {
+    await fresh.query("rollback");
+  }
   await fresh.query("begin");
   try {
     await fresh.query(fs.readFileSync("supabase/tests/api-keys.sql", "utf8"));
@@ -599,7 +607,7 @@ try {
     (error) => error.code === "P0001",
   );
   console.log(
-    "PASS: twenty-five migrations on disposable PostgreSQL 17; empty/existing/ambiguous admin guards, 26 RLS tables, denied browser roles, transactional import/publication/metadata, API keys and store-observation SQL.",
+    "PASS: twenty-six migrations on disposable PostgreSQL 17; empty/existing/ambiguous admin guards, 26 RLS tables, denied browser roles, transactional import/publication/metadata, API keys and store-observation SQL.",
   );
   console.log(
     "Auth tables are a minimal SQL contract fixture; this is not a full Supabase Auth/API stack test.",
