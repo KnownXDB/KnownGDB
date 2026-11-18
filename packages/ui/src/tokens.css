@@ -73,6 +73,9 @@
   --size-46: 46px;
   --size-48: 48px;
   --size-52: 52px;
+  --size-84: 84px;
+  --size-360: 360px;
+  --size-410: 410px;
   --size-54: 54px;
   --size-58: 58px;
   --size-68: 68px;
@@ -281,4 +284,70 @@
   --form-action-gap: var(--space-20);
   --control-radius: var(--size-8);
   --control-height: var(--size-42);
+  --sys-color-canvas: var(--palette-f7f7fc);
+  --sys-color-surface: var(--palette-ffffff);
+  --sys-color-surface-raised: var(--palette-fff);
+  --sys-color-text: var(--palette-171a35);
+  --sys-color-text-muted: var(--palette-555d74);
+  --sys-color-border: var(--palette-e8e8f1);
+  --sys-color-accent: var(--palette-6055f5);
+  --sys-color-accent-hover: var(--palette-5148d8);
+  --sys-color-accent-soft: var(--palette-efeeff);
+  --sys-color-on-accent: var(--palette-ffffff);
+  --sys-color-focus: var(--palette-766df5);
+  --sys-color-placeholder: var(--palette-777d93);
+  --sys-space-page-inline: var(--space-32);
+  --sys-space-section: var(--space-24);
+  --sys-layout-content-max: var(--size-1440);
+  --sys-layout-card-min: var(--size-170);
+  --sys-layout-artwork-card-min: var(--size-195);
+  --sys-virtual-gap: var(--space-16);
+  --sys-virtual-catalog-gap: var(--space-20);
+  --sys-virtual-artwork-gap: var(--space-18);
+  --sys-virtual-queue-gap: var(--space-8);
+  --sys-virtual-table-gap: 0px;
+  --sys-virtual-row-estimate: var(--size-120);
+  --sys-virtual-catalog-row-estimate: var(--size-360);
+  --sys-virtual-artwork-row-estimate: var(--size-410);
+  --sys-virtual-table-row-estimate: var(--size-76);
+  --sys-virtual-review-row-estimate: var(--size-84);
+}
+
+.is-public {
+  --sys-color-canvas: var(--palette-10121c);
+  --sys-color-surface: var(--palette-1c2030);
+  --sys-color-surface-raised: var(--palette-171925);
+  --sys-color-text: var(--palette-f4f5fb);
+  --sys-color-text-muted: var(--palette-b4bbce);
+  --sys-color-border: var(--palette-363b50);
+  --sys-color-accent: var(--palette-6559e9);
+  --sys-color-accent-hover: var(--palette-65518e);
+  --sys-color-accent-soft: var(--palette-29243d);
+  --sys-color-on-accent: var(--palette-fff);
+  --sys-color-focus: var(--palette-ad8cff);
+  --sys-color-placeholder: var(--palette-a8b0c3);
+  --sys-space-page-inline: var(--space-44);
+}
+
+@media (max-width: 800px) {
+  .is-public {
+    --sys-space-page-inline: var(--space-18);
+    --sys-space-section: var(--space-18);
+    --sys-layout-card-min: var(--size-145);
+    --sys-layout-artwork-card-min: var(--size-145);
+  }
+}
+
+@theme inline {
+  --color-canvas: var(--sys-color-canvas);
+  --color-surface: var(--sys-color-surface);
+  --color-surface-raised: var(--sys-color-surface-raised);
+  --color-content: var(--sys-color-text);
+  --color-content-muted: var(--sys-color-text-muted);
+  --color-outline: var(--sys-color-border);
+  --color-accent: var(--sys-color-accent);
+  --color-accent-hover: var(--sys-color-accent-hover);
+  --color-accent-soft: var(--sys-color-accent-soft);
+  --color-on-accent: var(--sys-color-on-accent);
+  --color-focus: var(--sys-color-focus);
 }

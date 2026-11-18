@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { ChevronRight, Plus, Search } from "lucide-react";
 import { PageHeading } from "@knowngdb/ui/workspace";
 import { GameMetadataEditor } from "./game-metadata.tsx";
+import { VirtualizedCollection } from "@knowngdb/ui/virtualized-collection";
 import type { AdminRole } from "@knowngdb/contracts";
 type ManagedGame = {
   id: string;
@@ -53,6 +54,9 @@ export function GamesView({
     onDirtyChange(false);
   }, [gameId, visibility, onDirtyChange]);
   const game = games.find((g) => g.id === gameId);
+  const filteredGames = games.filter((g) =>
+    g.title.toLowerCase().includes(query.toLowerCase()),
+  );
   async function change(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!game || busy) return;
@@ -206,9 +210,14 @@ export function GamesView({
           <span>Language</span>
           <span />
         </div>
-        {games
-          .filter((g) => g.title.toLowerCase().includes(query.toLowerCase()))
-          .map((g) => (
+        <VirtualizedCollection
+          items={filteredGames}
+          getKey={(game) => game.id}
+          label="Games"
+          className="game-table-rows"
+          estimateRowSizeToken="--sys-virtual-table-row-estimate"
+          gapToken="--sys-virtual-table-gap"
+          renderItem={(g) => (
             <a
               className="game-table-row"
               key={g.id}
@@ -221,7 +230,8 @@ export function GamesView({
               <span>{g.language}</span>
               <ChevronRight size={18} aria-hidden="true" />
             </a>
-          ))}
+          )}
+        />
         {!loaded ? (
           <div
             className="loading-skeleton"

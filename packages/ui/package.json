@@ -10,6 +10,10 @@
     "./account": "./src/account.tsx",
     "./recovery-state": "./src/recovery-state.ts",
     "./workspace.css": "./src/workspace.css",
-    "./submission": "./src/submission.tsx"
+    "./submission": "./src/submission.tsx",
+    "./virtualized-collection": "./src/virtualized-collection.tsx"
+  },
+  "dependencies": {
+    "@tanstack/react-virtual": "^3.14.26"
   }
 }
