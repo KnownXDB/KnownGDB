@@ -22,7 +22,13 @@ const publicReply = (body: unknown) =>
 export async function catalogHome(request: Request, env: ApiEnvironment) {
   if (request.method !== "GET")
     return reply({ error: "Method not allowed." }, 405);
-  if (new URL(request.url).search)
+  const params = new URL(request.url).searchParams;
+  const titlesOnly =
+    params.get("view") === "titles" && params.getAll("view").length === 1;
+  if (
+    [...params.keys()].some((key) => key !== "view") ||
+    (params.has("view") && !titlesOnly)
+  )
     return reply({ error: "Unexpected home catalog parameters." }, 400);
   if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY)
     return reply({ error: "Catalog connection is not configured." }, 503);
@@ -38,7 +44,8 @@ export async function catalogHome(request: Request, env: ApiEnvironment) {
       .eq("moderation_status", "approved")
       .eq("games.status", "published")
       .order("title")
-      .limit(50);
+      .limit(50)
+      .abortSignal(request.signal);
     if (error)
       return reply({ error: "Catalog is temporarily unavailable." }, 503);
     const games: GameSummary[] = (data ?? []).map((row) => {
@@ -54,6 +61,7 @@ export async function catalogHome(request: Request, env: ApiEnvironment) {
           "game",
       };
     });
+    if (titlesOnly) return publicReply({ games });
     if (!games.length) return publicReply({ games, artwork: [] });
     const artworkUrl = new URL("/api/v1/catalog/artwork", request.url);
     artworkUrl.searchParams.set(

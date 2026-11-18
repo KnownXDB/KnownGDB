@@ -75,6 +75,32 @@ test("direct published game lookup validates requests without exposing drafts", 
     503,
   );
 });
+test("combined public search validates queries before backend access", async () => {
+  const search = (url: string, init?: RequestInit) =>
+    handleRequest(new Request(`http://localhost${url}`, init), {});
+  assert.equal(
+    (await search("/api/v1/catalog/search?q=control", { method: "POST" }))
+      .status,
+    405,
+  );
+  assert.equal((await search("/api/v1/catalog/search")).status, 400);
+  assert.equal((await search("/api/v1/catalog/search?q=%20%20")).status, 400);
+  assert.equal(
+    (await search("/api/v1/catalog/search?q=one&q=two")).status,
+    400,
+  );
+  assert.equal(
+    (await search(`/api/v1/catalog/search?q=${"a".repeat(121)}`)).status,
+    400,
+  );
+  assert.equal(
+    (await search("/api/v1/catalog/search?q=control&limit=5")).status,
+    400,
+  );
+  const unavailable = await search("/api/v1/catalog/search?q=control");
+  assert.equal(unavailable.status, 503);
+  assert.equal(unavailable.headers.get("Cache-Control"), "no-store");
+});
 test("featured image preloads vary by page and skip unrelated routes", async () => {
   const response = await handleRequest(
     new Request("http://localhost/api/v1/catalog/featured-artwork", {
