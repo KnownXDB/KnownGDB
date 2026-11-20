@@ -1,3 +1,4 @@
+import { previewIntake } from "./intake-preview.ts";
 import { integrationCredentials } from "./integration-credentials.ts";
 import {
   resolveIdentities,
@@ -131,6 +132,8 @@ async function routeRequest(
     return catalogFeaturedArtwork(request, env);
   if (url.pathname === "/api/v1/admin/integration-credentials")
     return integrationCredentials(request, env);
+  if (url.pathname === "/api/v1/integrations/intake/preview")
+    return previewIntake(request, env);
   if (url.pathname === "/api/v1/integrations/identities/resolve")
     return resolveIdentities(request, env);
   if (url.pathname === keyPath) return apiKeysRequest(request, env);

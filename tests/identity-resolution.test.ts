@@ -352,3 +352,79 @@ test("IGDB identity submission requires active administration", async () => {
   );
   assert.equal(response.status, 401);
 });
+test("intake preview requires credential, rejects duplicates and makes no catalog writes", async () => {
+  let auth = "allowed";
+  const calls: string[] = [];
+  const server = createServer((req, res) => {
+    const url = new URL(req.url!, "http://localhost");
+    calls.push(`${req.method} ${url.pathname}`);
+    res.setHeader("Content-Type", "application/json");
+    if (url.pathname.endsWith("/consume_integration_credential"))
+      return res.end(JSON.stringify(auth));
+    if (url.pathname.endsWith("/external_identities")) return res.end("[]");
+    res.statusCode = 404;
+    res.end("{}");
+  });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  try {
+    const env = {
+      SUPABASE_URL: `http://127.0.0.1:${address.port}`,
+      SUPABASE_SECRET_KEY: "fixture-only",
+    };
+    const identity = {
+      provider: "igdb",
+      namespace: "igdb.game_id",
+      kind: "game_id",
+      value: "123",
+    };
+    const request = (
+      items: unknown[],
+      authorization = `Bearer kgsvc_${"a".repeat(43)}`,
+    ) =>
+      new Request("http://localhost/api/v1/integrations/intake/preview", {
+        method: "POST",
+        headers: {
+          Authorization: authorization,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ items }),
+      });
+    const items = [{ clientId: "job_1", identity }];
+    let response = await handleRequest(request(items), env);
+    assert.equal(response.status, 200);
+    assert.deepEqual((await response.json()).items, [
+      {
+        clientId: "job_1",
+        identityStatus: "not_found",
+        gameId: null,
+        decision: "review_new",
+      },
+    ]);
+    assert.ok(
+      calls.every(
+        (call) =>
+          call.startsWith("GET ") ||
+          call.endsWith("/consume_integration_credential"),
+      ),
+    );
+    const previous = calls.length;
+    response = await handleRequest(
+      request([...items, { clientId: "job_2", identity }]),
+      env,
+    );
+    assert.equal(response.status, 400);
+    assert.equal(calls.length, previous);
+    response = await handleRequest(request(items, ""), env);
+    assert.equal(response.status, 401);
+    auth = "limited";
+    response = await handleRequest(request(items), env);
+    assert.equal(response.status, 429);
+    assert.equal(response.headers.get("retry-after"), "60");
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});
