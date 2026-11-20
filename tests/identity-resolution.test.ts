@@ -142,3 +142,35 @@ test("authenticated lookup preserves provider and kind for official store identi
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
 });
+test("identity listing validates catalog UUID and requires authentication", async () => {
+  const env = {
+    SUPABASE_URL: "http://127.0.0.1:1",
+    SUPABASE_SECRET_KEY: "fixture-only",
+  };
+  const path = "http://localhost/api/v1/admin/games";
+  assert.equal(
+    (await handleRequest(new Request(`${path}/invalid/identities`), env))
+      .status,
+    400,
+  );
+  assert.equal(
+    (
+      await handleRequest(
+        new Request(`${path}/00000000-0000-4000-8000-000000000003/identities`),
+        env,
+      )
+    ).status,
+    401,
+  );
+  assert.equal(
+    (
+      await handleRequest(
+        new Request(`${path}/00000000-0000-4000-8000-000000000003/identities`, {
+          method: "POST",
+        }),
+        env,
+      )
+    ).status,
+    405,
+  );
+});

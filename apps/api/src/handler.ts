@@ -1,4 +1,8 @@
-import { resolveIdentities } from "./identity-resolution.ts";
+import {
+  resolveIdentities,
+  gameIdentities,
+  isGameIdentitiesRoute,
+} from "./identity-resolution.ts";
 import { catalogArtwork } from "./catalog-artwork.ts";
 import { catalogCovers } from "./catalog-covers.ts";
 import { catalogHome } from "./catalog-home.ts";
@@ -89,6 +93,7 @@ export async function handleRequest(
     ].includes(path) ||
     path === "/api/v1/admin/games" ||
     path === "/api/v1/admin/identities/resolve" ||
+    isGameIdentitiesRoute(path) ||
     path.startsWith("/api/v1/admin/store/") ||
     (isMetadataRoute(path) && path.startsWith("/api/v1/admin/")) ||
     isSubmissionRoute(path) ||
@@ -122,6 +127,7 @@ async function routeRequest(
     url.pathname = "/api/v1/games";
     return routeRequest(new Request(url, request), env);
   }
+  if (isGameIdentitiesRoute(url.pathname)) return gameIdentities(request, env);
   if (isMetadataRoute(url.pathname)) return metadataRequest(request, env);
   if (url.pathname === "/api/v1/admin/identities/resolve")
     return resolveIdentities(request, env);
