@@ -32,3 +32,10 @@ published localization of that language; missing languages are represented as
 absent, and omitted fields do not mean deletion. Explicit empty summary or
 description remains a proposed value. Preview requests are limited to 128 KiB
 in both the API and local Node adapter. No pending revision is queried.
+
+Optional `credits` compare explicit organization UUID, role, release UUID and
+region as a complete scope against approved credits. Optional `platformIds`
+report whether a platform UUID appears in any approved release; this does not
+compare release dates, editions or regions. These are presence checks only:
+unmentioned entries are not removals, and a missing ID is not proof that the
+term exists or should be created. Provider names must be resolved separately.

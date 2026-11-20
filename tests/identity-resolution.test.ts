@@ -434,6 +434,15 @@ test("intake field comparison only reads published metadata for verified identit
     data: {
       originalTitle: "Original",
       gameType: "game",
+      credits: [
+        {
+          organizationId: "00000000-0000-4000-8000-000000000011",
+          role: "developer",
+          releaseId: null,
+          region: null,
+        },
+      ],
+      releases: [{ platformId: "00000000-0000-4000-8000-000000000012" }],
       localizations: [
         {
           language: "en",
@@ -495,6 +504,24 @@ test("intake field comparison only reads published metadata for verified identit
               proposal: {
                 originalTitle: "Changed",
                 gameType: "game",
+                credits: [
+                  {
+                    organizationId: "00000000-0000-4000-8000-000000000011",
+                    role: "developer",
+                    releaseId: null,
+                    region: null,
+                  },
+                  {
+                    organizationId: "00000000-0000-4000-8000-000000000011",
+                    role: "developer",
+                    releaseId: null,
+                    region: "US",
+                  },
+                ],
+                platformIds: [
+                  "00000000-0000-4000-8000-000000000012",
+                  "00000000-0000-4000-8000-000000000013",
+                ],
                 localizations: [
                   { language: "en", title: "Name", description: "New" },
                   { language: "es", summary: "Resumen" },
@@ -537,6 +564,18 @@ test("intake field comparison only reads published metadata for verified identit
         changed: true,
       },
     ]);
+    assert.deepEqual(
+      item.comparison.credits.map(
+        (credit: { present: boolean }) => credit.present,
+      ),
+      [true, false],
+    );
+    assert.deepEqual(
+      item.comparison.platforms.map(
+        (platform: { present: boolean }) => platform.present,
+      ),
+      [true, false],
+    );
     metadata = null;
     response = await handleRequest(request(), env);
     item = (await response.json()).items[0];
@@ -560,5 +599,40 @@ test("intake field comparison only reads published metadata for verified identit
   } finally {
     server.closeAllConnections();
     await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});
+test("entity proposals reject invalid and duplicate identities before lookup", async () => {
+  const env = {
+    SUPABASE_URL: "http://127.0.0.1:1",
+    SUPABASE_SECRET_KEY: "fixture-only",
+  };
+  const id = "00000000-0000-4000-8000-000000000012";
+  const identity = {
+    provider: "igdb",
+    namespace: "igdb.game_id",
+    kind: "game_id",
+    value: "12",
+  };
+  for (const proposal of [
+    { platformIds: [id, id] },
+    { platformIds: ["not-a-uuid"] },
+    { credits: [{ organizationId: id, role: "developer" }] },
+    {
+      credits: [
+        { organizationId: id, role: "invented", releaseId: null, region: null },
+      ],
+    },
+  ]) {
+    const request = new Request(
+      "http://localhost/api/v1/integrations/intake/preview",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: [{ clientId: "job", identity, proposal }],
+        }),
+      },
+    );
+    assert.equal((await handleRequest(request, env)).status, 400);
   }
 });
