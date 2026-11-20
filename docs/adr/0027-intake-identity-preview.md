@@ -16,3 +16,12 @@ revisions, produce field-level changes or approve writes. Those capabilities
 require further contracts, authorization, conflict controls and tests. Integration
 credentials remain read-only. Real-service acceptance and deployment are
 separate from local tests.
+
+An optional `proposal` can provide `originalTitle` and/or `gameType`. For a
+verified identity, the preview compares only those supplied fields with the
+approved metadata of a published item and returns the public revision ID and
+per-field differences. Unknown fields and invalid proposals are rejected; an
+omitted field never means deletion. If no approved public revision is available,
+the comparison is unavailable. Pending or ambiguous identities do not trigger a
+metadata read. This slice does not compare descriptions, credits, releases,
+assets or unpublished revisions, and does not authorize updates.

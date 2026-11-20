@@ -1,3 +1,5 @@
+import { createClient } from "@supabase/supabase-js";
+import { gameTypes } from "@knowngdb/contracts";
 import { parseIdentities, resolveIdentities } from "./identity-resolution.ts";
 import { readJsonObject } from "./request-body.ts";
 import type { ApiEnvironment } from "./handler.ts";
@@ -23,13 +25,19 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
     body.items.length > 20
   )
     return reply({ error: "Provide 1 to 20 items." }, 400);
-  const items: { clientId: string; identity: unknown }[] = [];
+  const items: {
+    clientId: string;
+    identity: unknown;
+    proposal: Record<string, string> | null;
+  }[] = [];
   for (const value of body.items) {
     if (
       !value ||
       typeof value !== "object" ||
       Array.isArray(value) ||
-      Object.keys(value).sort().join(",") !== "clientId,identity"
+      !["clientId,identity", "clientId,identity,proposal"].includes(
+        Object.keys(value).sort().join(","),
+      )
     )
       return reply({ error: "Invalid item." }, 400);
     const item = value as Record<string, unknown>;
@@ -38,7 +46,31 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
       !/^[A-Za-z0-9_-]{1,80}$/.test(item.clientId)
     )
       return reply({ error: "Invalid item identifier." }, 400);
-    items.push({ clientId: item.clientId, identity: item.identity });
+    let proposal: Record<string, string> | null = null;
+    if (item.proposal !== undefined) {
+      const value = item.proposal;
+      if (!value || typeof value !== "object" || Array.isArray(value))
+        return reply({ error: "Invalid proposal." }, 400);
+      const candidate = value as Record<string, unknown>;
+      if (
+        !Object.keys(candidate).length ||
+        Object.keys(candidate).some(
+          (key) => !["originalTitle", "gameType"].includes(key),
+        ) ||
+        ("originalTitle" in candidate &&
+          (typeof candidate.originalTitle !== "string" ||
+            candidate.originalTitle.length > 300 ||
+            /[\p{Cc}\p{Cf}]/u.test(candidate.originalTitle))) ||
+        ("gameType" in candidate &&
+          (typeof candidate.gameType !== "string" ||
+            !gameTypes.includes(
+              candidate.gameType as (typeof gameTypes)[number],
+            )))
+      )
+        return reply({ error: "Invalid proposal." }, 400);
+      proposal = candidate as Record<string, string>;
+    }
+    items.push({ clientId: item.clientId, identity: item.identity, proposal });
   }
   const identities = parseIdentities({
     identities: items.map((item) => item.identity),
@@ -67,8 +99,40 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
   const resolved = (await response.json()) as {
     results: { status: string; gameId: string | null }[];
   };
-  return reply({
-    items: resolved.results.map((result, index) => ({
+  const client = createClient(env.SUPABASE_URL!, env.SUPABASE_SECRET_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    db: { retry: false },
+  });
+  const previews = [];
+  for (const [index, result] of resolved.results.entries()) {
+    const proposal = items[index].proposal;
+    let comparison: unknown = null;
+    if (proposal && result.status === "matched" && result.gameId) {
+      const published = await client.rpc("published_game_metadata", {
+        p_game: result.gameId,
+      });
+      if (published.error)
+        return reply({ error: "Published metadata unavailable." }, 503);
+      if (published.data?.data) {
+        const existing = published.data.data as Record<string, unknown>;
+        if (
+          Object.keys(proposal).some((key) => typeof existing[key] !== "string")
+        )
+          return reply({ error: "Published metadata unavailable." }, 503);
+        comparison = {
+          status: "available",
+          revisionId: published.data.revisionId,
+          fields: Object.entries(proposal).map(([field, proposed]) => ({
+            field,
+            current: existing[field],
+            proposed,
+            changed: existing[field] !== proposed,
+          })),
+        };
+      } else
+        comparison = { status: "unavailable", revisionId: null, fields: [] };
+    }
+    previews.push({
       clientId: items[index].clientId,
       identityStatus: result.status,
       gameId: result.gameId,
@@ -80,6 +144,16 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
             : result.status === "not_found"
               ? "review_new"
               : "review_identity",
-    })),
-  });
+      ...(proposal
+        ? {
+            comparison: comparison ?? {
+              status: "unavailable",
+              revisionId: null,
+              fields: [],
+            },
+          }
+        : {}),
+    });
+  }
+  return reply({ items: previews });
 }
