@@ -227,7 +227,7 @@ export async function recordGogIdentity(request: Request, env: ApiEnvironment) {
       !/^[0-9]{1,20}$/.test(productId) ||
       typeof source !== "string" ||
       source.length > 2000 ||
-      !/^https:\/\/[^\s]+$/.test(source) ||
+      !/^https:\/\/[^/@\s]+(?:\/[^\s]*)?$/.test(source) ||
       typeof reason !== "string" ||
       !reason.trim() ||
       reason.length > 2000

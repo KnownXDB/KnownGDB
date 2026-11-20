@@ -10,6 +10,11 @@ begin
   result:=public.admin_record_gog_product_identity('00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000041',target,'123456','https://example.invalid/evidence','Test again');
   if result->>'status'<>'existing' then raise exception 'Retry was not idempotent'; end if;
   if (select count(*) from catalog.external_identities where game_id=target and provider='gog' and value='123456')<>1 then raise exception 'Duplicate identifier'; end if;
+  if (select count(*) from catalog.audit_events where game_id=target and metadata->>'operation'='external_identity_submitted')<>1 then raise exception 'Audit event missing or duplicated'; end if;
+  begin
+    perform public.admin_record_gog_product_identity('00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000041',target,'987','https://user:secret@example.invalid/','Bad source');
+    raise exception 'Credential-bearing URL accepted';
+  exception when invalid_parameter_value then null; end;
   other:=gen_random_uuid();
   insert into catalog.games(id,item_type) values(other,'game');
   begin

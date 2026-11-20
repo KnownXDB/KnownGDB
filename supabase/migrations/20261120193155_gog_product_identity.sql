@@ -4,7 +4,7 @@ language plpgsql security invoker set search_path = pg_catalog as $$
 declare identity_id uuid;
 begin
   if not public.admin_check(p_actor,p_session) or not exists(select 1 from catalog.admin_members where user_id=p_actor and active and role='super_admin') then raise insufficient_privilege; end if;
-  if p_product_id is null or p_product_id !~ '^[0-9]{1,20}$' or coalesce(length(trim(p_reason)),0) not between 1 and 2000 or coalesce(length(trim(p_source)),0) not between 1 and 2000 or p_source !~ '^https://[^[:space:]]+$' then raise invalid_parameter_value; end if;
+  if p_product_id is null or p_product_id !~ '^[0-9]{1,20}$' or coalesce(length(trim(p_reason)),0) not between 1 and 2000 or coalesce(length(trim(p_source)),0) not between 1 and 2000 or p_source !~ '^https://[^/@[:space:]]+(/[^[:space:]]*)?$' then raise invalid_parameter_value; end if;
   if not exists(select 1 from catalog.games where id=p_game) then raise no_data_found; end if;
   perform pg_advisory_xact_lock(hashtextextended('gog.product_id:'||p_product_id, 0));
   if exists(select 1 from catalog.external_identities where provider='gog' and namespace='gog.product_id' and identifier_kind='product_id' and normalized_value=lower(p_product_id) and game_id<>p_game and evidence_status<>'rejected') then raise exception using errcode='23505', message='External identity conflict'; end if;
