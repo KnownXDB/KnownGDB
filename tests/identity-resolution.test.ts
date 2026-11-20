@@ -211,3 +211,28 @@ test("GOG identity endpoint denies missing session and insecure transport", asyn
     403,
   );
 });
+test("identity review requires an authenticated session", async () => {
+  const path = "/api/v1/admin/identities/review";
+  const env = {
+    SUPABASE_URL: "http://127.0.0.1:1",
+    SUPABASE_SECRET_KEY: "fixture-only",
+  };
+  assert.equal(
+    (
+      await handleRequest(
+        new Request(`http://localhost${path}`, { method: "POST" }),
+        env,
+      )
+    ).status,
+    401,
+  );
+  assert.equal(
+    (
+      await handleRequest(
+        new Request(`http://example.invalid${path}`, { method: "POST" }),
+        env,
+      )
+    ).status,
+    403,
+  );
+});

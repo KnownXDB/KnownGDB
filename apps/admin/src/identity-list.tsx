@@ -10,6 +10,7 @@ type Identity = {
   region: string;
   locale: string | null;
   evidence_status: string;
+  source_reference: string;
 };
 export function IdentityList() {
   const [gameId, setGameId] = useState("");
@@ -18,6 +19,7 @@ export function IdentityList() {
   const [productId, setProductId] = useState("");
   const [source, setSource] = useState("");
   const [reason, setReason] = useState("");
+  const [reviewReason, setReviewReason] = useState("");
   async function load(event: React.FormEvent) {
     event.preventDefault();
     setItems([]);
@@ -66,6 +68,34 @@ export function IdentityList() {
       setMessage(
         error instanceof Error ? error.message : "Identity could not be saved.",
       );
+    }
+  }
+  async function review(id: string, action: "verified" | "rejected") {
+    if (!reviewReason.trim()) {
+      setMessage("Enter a review reason.");
+      return;
+    }
+    try {
+      const response = await fetch("/api/v1/admin/identities/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          expected: "in_review",
+          action,
+          reason: reviewReason,
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw Error(body.error || "Review failed.");
+      setItems((current) =>
+        current.map((item) =>
+          item.id === id ? { ...item, evidence_status: body.status } : item,
+        ),
+      );
+      setMessage(`Identity ${body.status}.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Review failed.");
     }
   }
   return (
@@ -124,12 +154,39 @@ export function IdentityList() {
         </button>
       </form>
       <p role="status">{message}</p>
+      <label>
+        <span>Identity review reason</span>
+        <input
+          maxLength={2000}
+          value={reviewReason}
+          onChange={(event) => setReviewReason(event.target.value)}
+        />
+      </label>
       <ul>
         {items.map((item) => (
           <li key={item.id}>
             <strong>{item.provider}</strong> — {item.identifier_kind}:{" "}
             {item.value} ({item.namespace}; {item.scope}; {item.region}
             {item.locale ? ` / ${item.locale}` : ""}; {item.evidence_status})
+            <p>Evidence: {item.source_reference}</p>
+            {item.provider === "gog" &&
+              item.namespace === "gog.product_id" &&
+              item.evidence_status === "in_review" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => review(item.id, "verified")}
+                  >
+                    Verify
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => review(item.id, "rejected")}
+                  >
+                    Reject
+                  </button>
+                </>
+              )}
           </li>
         ))}
       </ul>
