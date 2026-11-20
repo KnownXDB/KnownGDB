@@ -58,3 +58,87 @@ test("identity endpoint refuses unconfigured and insecure access", async () => {
   );
   assert.equal(remote.status, 403);
 });
+
+import { createServer } from "node:http";
+import { once } from "node:events";
+test("authenticated lookup preserves provider and kind for official store identifiers", async () => {
+  const actor = "00000000-0000-4000-8000-000000000001";
+  const session = "00000000-0000-4000-8000-000000000002";
+  const game = "00000000-0000-4000-8000-000000000003";
+  const token = `fixture.${Buffer.from(JSON.stringify({ session_id: session })).toString("base64url")}.fixture`;
+  const queries: string[] = [];
+  const server = createServer((req, res) => {
+    const url = new URL(req.url!, "http://localhost");
+    res.setHeader("Content-Type", "application/json");
+    if (url.pathname === "/auth/v1/user")
+      return res.end(
+        JSON.stringify({
+          id: actor,
+          email_confirmed_at: "2026-01-01T00:00:00Z",
+        }),
+      );
+    if (url.pathname.endsWith("/admin_members"))
+      return res.end(JSON.stringify([{ role: "super_admin" }]));
+    if (url.pathname.endsWith("/admin_check")) return res.end("true");
+    if (url.pathname.endsWith("/external_identities")) {
+      queries.push(url.search);
+      return res.end(
+        JSON.stringify([
+          {
+            game_id: game,
+            evidence_status: "verified",
+            valid_from: null,
+            valid_until: null,
+          },
+        ]),
+      );
+    }
+    res.statusCode = 404;
+    res.end("{}");
+  });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  try {
+    const identities = ["steam", "epic", "xbox", "gog", "ea", "ubisoft"].map(
+      (provider) => ({
+        provider,
+        namespace: `${provider}.product`,
+        kind: "product_id",
+        value: "12345",
+      }),
+    );
+    const request = new Request(
+      "http://localhost/api/v1/admin/identities/resolve",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Origin: "http://localhost",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ identities }),
+      },
+    );
+    const result = await handleRequest(request, {
+      SUPABASE_URL: `http://127.0.0.1:${address.port}`,
+      SUPABASE_SECRET_KEY: "fixture-only",
+    });
+    assert.equal(result.status, 200);
+    const body = await result.json();
+    assert.deepEqual(
+      body.results.map((entry: { gameId: string }) => entry.gameId),
+      identities.map(() => game),
+    );
+    assert.equal(queries.length, 6);
+    for (let i = 0; i < identities.length; i++) {
+      const params = new URLSearchParams(queries[i]);
+      assert.equal(params.get("provider"), `eq.${identities[i].provider}`);
+      assert.equal(params.get("identifier_kind"), "eq.product_id");
+    }
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});
