@@ -1,3 +1,4 @@
+import { integrationCredentials } from "./integration-credentials.ts";
 import {
   resolveIdentities,
   gameIdentities,
@@ -78,6 +79,7 @@ export async function handleRequest(
   if (
     (path === keyPath ||
       path === consumerPath ||
+      path.startsWith("/api/v1/integrations/") ||
       accountPaths.includes(path) ||
       path.startsWith("/api/v1/admin/") ||
       isSubmissionRoute(path)) &&
@@ -93,6 +95,7 @@ export async function handleRequest(
       "/api/v1/account/logout",
       "/api/v1/admin/session",
     ].includes(path) ||
+    path === "/api/v1/admin/integration-credentials" ||
     path === "/api/v1/admin/games" ||
     path === "/api/v1/admin/identities/resolve" ||
     isGameIdentitiesRoute(path) ||
@@ -124,6 +127,10 @@ async function routeRequest(
   if (isCatalogGameRoute(url.pathname)) return catalogGame(request, env);
   if (url.pathname === "/api/v1/catalog/featured-artwork")
     return catalogFeaturedArtwork(request, env);
+  if (url.pathname === "/api/v1/admin/integration-credentials")
+    return integrationCredentials(request, env);
+  if (url.pathname === "/api/v1/integrations/identities/resolve")
+    return resolveIdentities(request, env);
   if (url.pathname === keyPath) return apiKeysRequest(request, env);
   if (url.pathname === consumerPath) {
     const denied = await verifyConsumerKey(request, env);

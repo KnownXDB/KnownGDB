@@ -3,7 +3,7 @@ create table catalog.integration_credentials (
  id uuid primary key default gen_random_uuid(), name text not null check(length(trim(name)) between 1 and 80),
  key_hash text not null unique check(key_hash ~ '^[0-9a-f]{64}$'), prefix text not null check(prefix ~ '^kgsvc_[A-Za-z0-9_-]{7}$'),
  scope text not null check(scope='identity:resolve'), created_by uuid not null references auth.users(id),
- created_at timestamptz not null default now(), expires_at timestamptz not null, revoked_at timestamptz, last_used_at timestamptz
+ created_at timestamptz not null default now(), expires_at timestamptz not null, revoked_at timestamptz, last_used_at timestamptz, window_start timestamptz, window_count integer not null default 0
 );
 create table catalog.integration_credential_events (
  id bigint generated always as identity primary key, credential_id uuid not null references catalog.integration_credentials(id),
@@ -34,10 +34,14 @@ begin
  if new_id is not null then insert into catalog.integration_credential_events(credential_id,actor_id,action,reason) values(new_id,p_actor,'revoked',trim(p_reason)); end if;
  return jsonb_build_object('revoked',new_id is not null);
 end $$;
-create function public.consume_integration_credential(p_hash text,p_scope text) returns boolean language plpgsql security invoker set search_path=pg_catalog as $$
+create function public.consume_integration_credential(p_hash text,p_scope text) returns text language plpgsql security invoker set search_path=pg_catalog as $$
+declare item catalog.integration_credentials; stamp timestamptz:=clock_timestamp();
 begin
- update catalog.integration_credentials set last_used_at=now() where key_hash=p_hash and scope=p_scope and revoked_at is null and expires_at>now();
- return found;
+ select * into item from catalog.integration_credentials where key_hash=p_hash and scope=p_scope and revoked_at is null and expires_at>stamp for update;
+ if not found then return 'denied'; end if;
+ if item.window_start is not null and item.window_start > stamp - interval '1 minute' and item.window_count >= 30 then return 'limited'; end if;
+ update catalog.integration_credentials set last_used_at=stamp, window_start=case when item.window_start is null or item.window_start <= stamp-interval '1 minute' then stamp else item.window_start end, window_count=case when item.window_start is null or item.window_start <= stamp-interval '1 minute' then 1 else item.window_count+1 end where id=item.id;
+ return 'allowed';
 end $$;
 revoke all on function public.manage_integration_credential(uuid,uuid,text,uuid,text,text,text,timestamptz,text),public.consume_integration_credential(text,text) from public,anon,authenticated;
 grant execute on function public.manage_integration_credential(uuid,uuid,text,uuid,text,text,text,timestamptz,text),public.consume_integration_credential(text,text) to service_role;

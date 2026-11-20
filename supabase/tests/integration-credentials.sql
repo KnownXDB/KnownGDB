@@ -7,15 +7,17 @@ begin
   result:=public.manage_integration_credential(actor,session,'create',null,'Fixture',repeat('a',64),'kgsvc_abc1234',now()+interval '30 days','Test');
   key_id:=(result->>'id')::uuid;
   assert result->>'scope'='identity:resolve';
-  assert public.consume_integration_credential(repeat('a',64),'identity:resolve');
-  assert not public.consume_integration_credential(repeat('a',64),'catalog:read');
+  assert public.consume_integration_credential(repeat('a',64),'identity:resolve')='allowed';
+  assert public.consume_integration_credential(repeat('a',64),'catalog:read')='denied';
   result:=public.manage_integration_credential(actor,session,'list',null,null,null,null,null,null);
   assert jsonb_array_length(result)=1 and not (result->0 ? 'key_hash');
+  for i in 1..29 loop assert public.consume_integration_credential(repeat('a',64),'identity:resolve')='allowed'; end loop;
+  assert public.consume_integration_credential(repeat('a',64),'identity:resolve')='limited';
   update catalog.integration_credentials set expires_at=now()-interval '1 second' where id=key_id;
-  assert not public.consume_integration_credential(repeat('a',64),'identity:resolve');
+  assert public.consume_integration_credential(repeat('a',64),'identity:resolve')='denied';
   update catalog.integration_credentials set expires_at=now()+interval '30 days' where id=key_id;
   perform public.manage_integration_credential(actor,session,'revoke',key_id,null,null,null,null,'Retired');
-  assert not public.consume_integration_credential(repeat('a',64),'identity:resolve');
+  assert public.consume_integration_credential(repeat('a',64),'identity:resolve')='denied';
   assert (select count(*) from catalog.integration_credential_events where credential_id=key_id)=2;
   update catalog.admin_members set role='moderator' where user_id=actor;
   begin
