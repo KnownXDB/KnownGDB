@@ -1,3 +1,4 @@
+import { IdentityList } from "./identity-list.tsx";
 import type { AdminRole } from "@knowngdb/contracts";
 import { PageHeading } from "@knowngdb/ui/workspace";
 import { SteamPreview } from "./steam-preview.tsx";
@@ -15,6 +16,7 @@ export function StoreObservations({ role }: { role: AdminRole }) {
         description="Review official storefront evidence before associating provider identities with a KnownGDB catalog item."
       />
       <div className="store-observations">
+        <IdentityList />
         <SteamPreview role={role} />
         <XboxPreview role={role} />
         <EpicPreview role={role} />

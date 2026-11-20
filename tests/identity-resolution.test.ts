@@ -132,6 +132,18 @@ test("authenticated lookup preserves provider and kind for official store identi
       identities.map(() => game),
     );
     assert.equal(queries.length, 6);
+    const listing = await handleRequest(
+      new Request(`http://localhost/api/v1/admin/games/${game}/identities`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+      {
+        SUPABASE_URL: `http://127.0.0.1:${address.port}`,
+        SUPABASE_SECRET_KEY: "fixture-only",
+      },
+    );
+    assert.equal(listing.status, 200);
+    assert.equal((await listing.json()).truncated, false);
+    assert.equal(new URLSearchParams(queries[6]).get("game_id"), `eq.${game}`);
     for (let i = 0; i < identities.length; i++) {
       const params = new URLSearchParams(queries[i]);
       assert.equal(params.get("provider"), `eq.${identities[i].provider}`);
@@ -141,4 +153,61 @@ test("authenticated lookup preserves provider and kind for official store identi
     server.closeAllConnections();
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
+});
+test("identity listing validates catalog UUID and requires authentication", async () => {
+  const env = {
+    SUPABASE_URL: "http://127.0.0.1:1",
+    SUPABASE_SECRET_KEY: "fixture-only",
+  };
+  const path = "http://localhost/api/v1/admin/games";
+  assert.equal(
+    (await handleRequest(new Request(`${path}/invalid/identities`), env))
+      .status,
+    400,
+  );
+  assert.equal(
+    (
+      await handleRequest(
+        new Request(`${path}/00000000-0000-4000-8000-000000000003/identities`),
+        env,
+      )
+    ).status,
+    401,
+  );
+  assert.equal(
+    (
+      await handleRequest(
+        new Request(`${path}/00000000-0000-4000-8000-000000000003/identities`, {
+          method: "POST",
+        }),
+        env,
+      )
+    ).status,
+    405,
+  );
+});
+test("GOG identity endpoint denies missing session and insecure transport", async () => {
+  const path = "/api/v1/admin/identities/gog";
+  const env = {
+    SUPABASE_URL: "http://127.0.0.1:1",
+    SUPABASE_SECRET_KEY: "fixture-only",
+  };
+  assert.equal(
+    (
+      await handleRequest(
+        new Request(`http://localhost${path}`, { method: "POST" }),
+        env,
+      )
+    ).status,
+    401,
+  );
+  assert.equal(
+    (
+      await handleRequest(
+        new Request(`http://example.invalid${path}`, { method: "POST" }),
+        env,
+      )
+    ).status,
+    403,
+  );
 });

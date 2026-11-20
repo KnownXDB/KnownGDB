@@ -156,3 +156,108 @@ export async function resolveIdentities(request: Request, env: ApiEnvironment) {
     return reply({ error: "Identity resolution unavailable." }, 503);
   }
 }
+export const isGameIdentitiesRoute = (path: string) =>
+  /^\/api\/v1\/admin\/games\/[^/]+\/identities$/.test(path);
+
+export async function gameIdentities(request: Request, env: ApiEnvironment) {
+  if (request.method !== "GET")
+    return reply({ error: "Method not allowed." }, 405);
+  const url = new URL(request.url);
+  const game = url.pathname.split("/")[5];
+  if (
+    url.search ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      game,
+    )
+  )
+    return reply({ error: "A valid catalog item ID is required." }, 400);
+  if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY)
+    return reply({ error: "Catalog connection unavailable." }, 503);
+  try {
+    const client = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      db: { retry: false },
+    });
+    const access = await verifyAdmin(client, request);
+    if (access instanceof Response) return access;
+    const result = await client
+      .schema("catalog")
+      .from("external_identities")
+      .select(
+        "id,provider,namespace,identifier_kind,value,scope,region,locale,evidence_status,source_kind,source_reference,last_verified_at",
+      )
+      .eq("game_id", game)
+      .order("id")
+      .limit(101);
+    if (result.error)
+      return reply({ error: "Identity list unavailable." }, 503);
+    const rows = result.data ?? [];
+    return reply({
+      identities: rows.slice(0, 100),
+      truncated: rows.length > 100,
+    });
+  } catch {
+    return reply({ error: "Identity list unavailable." }, 503);
+  }
+}
+export async function recordGogIdentity(request: Request, env: ApiEnvironment) {
+  if (request.method !== "POST")
+    return reply({ error: "Method not allowed." }, 405);
+  if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY)
+    return reply({ error: "Catalog connection unavailable." }, 503);
+  try {
+    const client = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      db: { retry: false },
+    });
+    const access = await verifyAdmin(client, request);
+    if (access instanceof Response) return access;
+    if (!access.superAdmin)
+      return reply({ error: "Super Admin permission required." }, 403);
+    const body = await readJsonObject(request);
+    if (body instanceof Response) return body;
+    const { gameId, productId, source, reason } = body;
+    if (
+      Object.keys(body).sort().join(",") !== "gameId,productId,reason,source" ||
+      typeof gameId !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        gameId,
+      ) ||
+      typeof productId !== "string" ||
+      !/^[0-9]{1,20}$/.test(productId) ||
+      typeof source !== "string" ||
+      source.length > 2000 ||
+      !/^https:\/\/[^/@\s]+(?:\/[^\s]*)?$/.test(source) ||
+      typeof reason !== "string" ||
+      !reason.trim() ||
+      reason.length > 2000
+    )
+      return reply(
+        {
+          error: "Provide a valid game, product ID, source and review reason.",
+        },
+        400,
+      );
+    const result = await client.rpc("admin_record_gog_product_identity", {
+      p_actor: access.actor,
+      p_session: access.sessionId,
+      p_game: gameId,
+      p_product_id: productId,
+      p_source: source,
+      p_reason: reason,
+    });
+    if (result.error)
+      return reply(
+        {
+          error:
+            result.error.code === "23505"
+              ? "The product ID is already associated with another catalog item."
+              : "Identity could not be saved.",
+        },
+        result.error.code === "23505" ? 409 : 503,
+      );
+    return reply(result.data);
+  } catch {
+    return reply({ error: "Identity could not be saved." }, 503);
+  }
+}
