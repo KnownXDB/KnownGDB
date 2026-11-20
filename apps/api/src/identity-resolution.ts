@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { hashApiKey } from "./api-keys.ts";
 import { verifyAdmin } from "./admin-access.ts";
 import { readJsonObject } from "./request-body.ts";
 import type { ApiEnvironment } from "./handler.ts";
@@ -123,8 +124,38 @@ export async function resolveIdentities(request: Request, env: ApiEnvironment) {
       auth: { persistSession: false, autoRefreshToken: false },
       db: { retry: false },
     });
-    const access = await verifyAdmin(client, request);
-    if (access instanceof Response) return access;
+    const service =
+      new URL(request.url).pathname ===
+      "/api/v1/integrations/identities/resolve";
+    if (service) {
+      const key = request.headers
+        .get("authorization")
+        ?.match(/^Bearer (kgsvc_[A-Za-z0-9_-]{43})$/)?.[1];
+      if (!key)
+        return reply({ error: "Integration credential required." }, 401);
+      const consumed = await client.rpc("consume_integration_credential", {
+        p_hash: hashApiKey(key),
+        p_scope: "identity:resolve",
+      });
+      if (consumed.error)
+        return reply({ error: "Credential verification unavailable." }, 503);
+      if (consumed.data === "limited")
+        return Response.json(
+          { error: "Rate limit reached." },
+          {
+            status: 429,
+            headers: { "Retry-After": "60", "Cache-Control": "no-store" },
+          },
+        );
+      if (consumed.data !== "allowed")
+        return reply(
+          { error: "Integration credential invalid or revoked." },
+          401,
+        );
+    } else {
+      const access = await verifyAdmin(client, request);
+      if (access instanceof Response) return access;
+    }
     const body = await readJsonObject(request);
     if (body instanceof Response) return body;
     const identities = parseIdentities(body);

@@ -236,3 +236,106 @@ test("identity review requires an authenticated session", async () => {
     403,
   );
 });
+test("integration resolver rejects missing and malformed credentials without consuming them", async () => {
+  const env = {
+    SUPABASE_URL: "http://127.0.0.1:1",
+    SUPABASE_SECRET_KEY: "fixture-only",
+  };
+  const url = "https://example.invalid/api/v1/integrations/identities/resolve";
+  for (const authorization of ["", "Bearer kgdb_wrong", "Bearer kgsvc_bad"]) {
+    const response = await handleRequest(
+      new Request(url, {
+        method: "POST",
+        headers: {
+          Authorization: authorization,
+          "Content-Type": "application/json",
+        },
+        body: "{}",
+      }),
+      env,
+    );
+    assert.equal(response.status, 401);
+  }
+  assert.equal(
+    (
+      await handleRequest(
+        new Request(
+          "http://example.invalid/api/v1/integrations/identities/resolve",
+          { method: "POST" },
+        ),
+        env,
+      )
+    ).status,
+    403,
+  );
+});
+test("integration credential management requires an admin session", async () => {
+  const env = {
+    SUPABASE_URL: "http://127.0.0.1:1",
+    SUPABASE_SECRET_KEY: "fixture-only",
+  };
+  const response = await handleRequest(
+    new Request("http://localhost/api/v1/admin/integration-credentials"),
+    env,
+  );
+  assert.equal(response.status, 401);
+});
+test("integration resolution enforces credential result and quota before lookup", async () => {
+  let decision = "allowed";
+  let lookups = 0;
+  const server = createServer((req, res) => {
+    const url = new URL(req.url!, "http://localhost");
+    res.setHeader("Content-Type", "application/json");
+    if (url.pathname.endsWith("/consume_integration_credential"))
+      return res.end(JSON.stringify(decision));
+    if (url.pathname.endsWith("/external_identities")) {
+      lookups++;
+      return res.end("[]");
+    }
+    res.statusCode = 404;
+    res.end("{}");
+  });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  try {
+    const env = {
+      SUPABASE_URL: `http://127.0.0.1:${address.port}`,
+      SUPABASE_SECRET_KEY: "fixture-only",
+    };
+    const request = () =>
+      new Request("http://localhost/api/v1/integrations/identities/resolve", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer kgsvc_${"a".repeat(43)}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          identities: [
+            {
+              provider: "steam",
+              namespace: "steam.app_id",
+              kind: "app_id",
+              value: "123",
+            },
+          ],
+        }),
+      });
+    let response = await handleRequest(request(), env);
+    assert.equal(response.status, 200);
+    assert.equal(lookups, 1);
+    decision = "limited";
+    response = await handleRequest(request(), env);
+    assert.equal(response.status, 429);
+    assert.equal(response.headers.get("retry-after"), "60");
+    assert.equal(lookups, 1);
+    decision = "denied";
+    response = await handleRequest(request(), env);
+    assert.equal(response.status, 401);
+    assert.equal(lookups, 1);
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});
