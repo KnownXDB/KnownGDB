@@ -18,10 +18,20 @@ type LocalizedProposal = {
   summary?: string;
   description?: string;
 };
+const uuid =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+type CreditProposal = {
+  organizationId: string;
+  role: string;
+  releaseId: string | null;
+  region: string | null;
+};
 type Proposal = {
   originalTitle?: string;
   gameType?: string;
   localizations?: LocalizedProposal[];
+  credits?: CreditProposal[];
+  platformIds?: string[];
 };
 export async function previewIntake(request: Request, env: ApiEnvironment) {
   if (request.method !== "POST")
@@ -68,7 +78,13 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
         !Object.keys(candidate).length ||
         Object.keys(candidate).some(
           (key) =>
-            !["originalTitle", "gameType", "localizations"].includes(key),
+            ![
+              "originalTitle",
+              "gameType",
+              "localizations",
+              "credits",
+              "platformIds",
+            ].includes(key),
         ) ||
         ("originalTitle" in candidate &&
           (typeof candidate.originalTitle !== "string" ||
@@ -134,6 +150,60 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
               return reply({ error: "Invalid localized text." }, 400);
         }
       }
+      if ("credits" in candidate) {
+        if (
+          !Array.isArray(candidate.credits) ||
+          candidate.credits.length < 1 ||
+          candidate.credits.length > 50
+        )
+          return reply({ error: "Invalid credits." }, 400);
+        const seen = new Set<string>();
+        for (const entry of candidate.credits) {
+          if (!entry || typeof entry !== "object" || Array.isArray(entry))
+            return reply({ error: "Invalid credit." }, 400);
+          const c = entry as Record<string, unknown>;
+          if (
+            Object.keys(c).sort().join(",") !==
+              "organizationId,region,releaseId,role" ||
+            typeof c.organizationId !== "string" ||
+            !uuid.test(c.organizationId) ||
+            typeof c.role !== "string" ||
+            ![
+              "developer",
+              "publisher",
+              "support",
+              "porting",
+              "distributor",
+            ].includes(c.role) ||
+            (c.releaseId !== null &&
+              (typeof c.releaseId !== "string" || !uuid.test(c.releaseId))) ||
+            (c.region !== null &&
+              (typeof c.region !== "string" || !/^[A-Z]{2}$/.test(c.region)))
+          )
+            return reply({ error: "Invalid credit." }, 400);
+          const key = JSON.stringify([
+            c.organizationId.toLowerCase(),
+            c.role,
+            typeof c.releaseId === "string" ? c.releaseId.toLowerCase() : null,
+            c.region,
+          ]);
+          if (seen.has(key)) return reply({ error: "Duplicate credit." }, 400);
+          seen.add(key);
+        }
+      }
+      if ("platformIds" in candidate) {
+        if (
+          !Array.isArray(candidate.platformIds) ||
+          candidate.platformIds.length < 1 ||
+          candidate.platformIds.length > 50 ||
+          candidate.platformIds.some(
+            (id) => typeof id !== "string" || !uuid.test(id),
+          ) ||
+          new Set(candidate.platformIds.map((id) => id.toLowerCase())).size !==
+            candidate.platformIds.length
+        )
+          return reply({ error: "Invalid platforms." }, 400);
+      }
       proposal = candidate as Proposal;
     }
     items.push({ clientId: item.clientId, identity: item.identity, proposal });
@@ -183,7 +253,10 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
         const existing = published.data.data as Record<string, unknown>;
         if (
           Object.keys(proposal)
-            .filter((key) => key !== "localizations")
+            .filter(
+              (key) =>
+                !["localizations", "credits", "platformIds"].includes(key),
+            )
             .some((key) => typeof existing[key] !== "string")
         )
           return reply({ error: "Published metadata unavailable." }, 503);
@@ -191,7 +264,10 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
           status: "available",
           revisionId: published.data.revisionId,
           fields: Object.entries(proposal)
-            .filter(([field]) => field !== "localizations")
+            .filter(
+              ([field]) =>
+                !["localizations", "credits", "platformIds"].includes(field),
+            )
             .map(([field, proposed]) => ({
               field,
               current: existing[field],
@@ -217,6 +293,42 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
           });
           (comparison as { localizedFields?: unknown }).localizedFields =
             localizedFields;
+        }
+        if (proposal.credits) {
+          if (!Array.isArray(existing.credits))
+            return reply({ error: "Published metadata unavailable." }, 503);
+          const rows = existing.credits as Record<string, unknown>[];
+          (comparison as { credits?: unknown }).credits = proposal.credits.map(
+            (credit) => ({
+              ...credit,
+              present: rows.some(
+                (row) =>
+                  typeof row.organizationId === "string" &&
+                  row.organizationId.toLowerCase() ===
+                    credit.organizationId.toLowerCase() &&
+                  row.role === credit.role &&
+                  (typeof row.releaseId === "string"
+                    ? row.releaseId.toLowerCase()
+                    : row.releaseId) ===
+                    (credit.releaseId?.toLowerCase() ?? null) &&
+                  row.region === credit.region,
+              ),
+            }),
+          );
+        }
+        if (proposal.platformIds) {
+          if (!Array.isArray(existing.releases))
+            return reply({ error: "Published metadata unavailable." }, 503);
+          const rows = existing.releases as Record<string, unknown>[];
+          (comparison as { platforms?: unknown }).platforms =
+            proposal.platformIds.map((id) => ({
+              id,
+              present: rows.some(
+                (row) =>
+                  typeof row.platformId === "string" &&
+                  row.platformId.toLowerCase() === id.toLowerCase(),
+              ),
+            }));
         }
       } else
         comparison = { status: "unavailable", revisionId: null, fields: [] };
