@@ -11,12 +11,24 @@ const reply = (body: unknown, status = 200) =>
       "X-Content-Type-Options": "nosniff",
     },
   });
+export const intakePreviewBodyLimit = 128 * 1024;
+type LocalizedProposal = {
+  language: string;
+  title?: string;
+  summary?: string;
+  description?: string;
+};
+type Proposal = {
+  originalTitle?: string;
+  gameType?: string;
+  localizations?: LocalizedProposal[];
+};
 export async function previewIntake(request: Request, env: ApiEnvironment) {
   if (request.method !== "POST")
     return reply({ error: "Method not allowed." }, 405);
   if (new URL(request.url).search)
     return reply({ error: "Unexpected parameters." }, 400);
-  const body = await readJsonObject(request);
+  const body = await readJsonObject(request, intakePreviewBodyLimit);
   if (body instanceof Response) return body;
   if (
     Object.keys(body).join(",") !== "items" ||
@@ -28,7 +40,7 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
   const items: {
     clientId: string;
     identity: unknown;
-    proposal: Record<string, string> | null;
+    proposal: Proposal | null;
   }[] = [];
   for (const value of body.items) {
     if (
@@ -46,7 +58,7 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
       !/^[A-Za-z0-9_-]{1,80}$/.test(item.clientId)
     )
       return reply({ error: "Invalid item identifier." }, 400);
-    let proposal: Record<string, string> | null = null;
+    let proposal: Proposal | null = null;
     if (item.proposal !== undefined) {
       const value = item.proposal;
       if (!value || typeof value !== "object" || Array.isArray(value))
@@ -55,7 +67,8 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
       if (
         !Object.keys(candidate).length ||
         Object.keys(candidate).some(
-          (key) => !["originalTitle", "gameType"].includes(key),
+          (key) =>
+            !["originalTitle", "gameType", "localizations"].includes(key),
         ) ||
         ("originalTitle" in candidate &&
           (typeof candidate.originalTitle !== "string" ||
@@ -68,7 +81,60 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
             )))
       )
         return reply({ error: "Invalid proposal." }, 400);
-      proposal = candidate as Record<string, string>;
+      if ("localizations" in candidate) {
+        if (
+          !Array.isArray(candidate.localizations) ||
+          candidate.localizations.length < 1 ||
+          candidate.localizations.length > 8
+        )
+          return reply({ error: "Invalid localizations." }, 400);
+        const languages = new Set<string>();
+        for (const entry of candidate.localizations) {
+          if (!entry || typeof entry !== "object" || Array.isArray(entry))
+            return reply({ error: "Invalid localization." }, 400);
+          const row = entry as Record<string, unknown>;
+          const keys = Object.keys(row);
+          if (
+            keys.some(
+              (key) =>
+                !["language", "title", "summary", "description"].includes(key),
+            ) ||
+            keys.length < 2 ||
+            typeof row.language !== "string" ||
+            row.language === "und" ||
+            !/^[a-z]{2,3}(-[a-z0-9]{2,8})*$/.test(row.language)
+          )
+            return reply({ error: "Invalid localization." }, 400);
+          try {
+            if (
+              Intl.getCanonicalLocales(row.language)[0]?.toLowerCase() !==
+              row.language
+            )
+              throw Error();
+          } catch {
+            return reply({ error: "Invalid localization language." }, 400);
+          }
+          if (languages.has(row.language))
+            return reply({ error: "Duplicate localization." }, 400);
+          languages.add(row.language);
+          for (const [field, max] of [
+            ["title", 300],
+            ["summary", 500],
+            ["description", 20000],
+          ] as const)
+            if (
+              field in row &&
+              (typeof row[field] !== "string" ||
+                row[field].length > max ||
+                /[\p{Cf}\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u.test(
+                  row[field],
+                ) ||
+                (field === "title" && !row[field].trim()))
+            )
+              return reply({ error: "Invalid localized text." }, 400);
+        }
+      }
+      proposal = candidate as Proposal;
     }
     items.push({ clientId: item.clientId, identity: item.identity, proposal });
   }
@@ -116,19 +182,42 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
       if (published.data?.data) {
         const existing = published.data.data as Record<string, unknown>;
         if (
-          Object.keys(proposal).some((key) => typeof existing[key] !== "string")
+          Object.keys(proposal)
+            .filter((key) => key !== "localizations")
+            .some((key) => typeof existing[key] !== "string")
         )
           return reply({ error: "Published metadata unavailable." }, 503);
         comparison = {
           status: "available",
           revisionId: published.data.revisionId,
-          fields: Object.entries(proposal).map(([field, proposed]) => ({
-            field,
-            current: existing[field],
-            proposed,
-            changed: existing[field] !== proposed,
-          })),
+          fields: Object.entries(proposal)
+            .filter(([field]) => field !== "localizations")
+            .map(([field, proposed]) => ({
+              field,
+              current: existing[field],
+              proposed,
+              changed: existing[field] !== proposed,
+            })),
         };
+        if (proposal.localizations) {
+          if (!Array.isArray(existing.localizations))
+            return reply({ error: "Published metadata unavailable." }, 503);
+          const rows = existing.localizations as Record<string, unknown>[];
+          const localizedFields = proposal.localizations.flatMap((row) => {
+            const found = rows.find((value) => value.language === row.language);
+            return (["title", "summary", "description"] as const)
+              .filter((field) => row[field] !== undefined)
+              .map((field) => ({
+                language: row.language,
+                field,
+                current: found?.[field] ?? null,
+                proposed: row[field]!.trim(),
+                changed: found?.[field] !== row[field]!.trim(),
+              }));
+          });
+          (comparison as { localizedFields?: unknown }).localizedFields =
+            localizedFields;
+        }
       } else
         comparison = { status: "unavailable", revisionId: null, fields: [] };
     }

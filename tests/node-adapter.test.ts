@@ -92,3 +92,44 @@ test("the Node adapter bounds incoming bytes and streams outgoing responses", as
     await once(server, "close");
   }
 });
+test("intake preview has a route-specific bounded body limit", async () => {
+  const server = createApiServer({}, async () => new Response("ok"));
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  try {
+    const origin = `http://127.0.0.1:${address.port}`;
+    assert.equal(
+      (
+        await fetch(`${origin}/api/v1/integrations/intake/preview`, {
+          method: "POST",
+          body: "x".repeat(5000),
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (
+        await fetch(`${origin}/api/v1/integrations/intake/preview`, {
+          method: "POST",
+          body: "x".repeat(128 * 1024 + 1),
+        })
+      ).status,
+      413,
+    );
+    assert.equal(
+      (
+        await fetch(`${origin}/api/v1/account/login`, {
+          method: "POST",
+          body: "x".repeat(5000),
+        })
+      ).status,
+      413,
+    );
+  } finally {
+    server.closeAllConnections();
+    server.close();
+    await once(server, "close");
+  }
+});
