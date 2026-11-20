@@ -3,6 +3,7 @@ import {
   gameIdentities,
   isGameIdentitiesRoute,
   recordGogIdentity,
+  reviewExternalIdentity,
 } from "./identity-resolution.ts";
 import { catalogArtwork } from "./catalog-artwork.ts";
 import { catalogCovers } from "./catalog-covers.ts";
@@ -96,6 +97,7 @@ export async function handleRequest(
     path === "/api/v1/admin/identities/resolve" ||
     isGameIdentitiesRoute(path) ||
     path === "/api/v1/admin/identities/gog" ||
+    path === "/api/v1/admin/identities/review" ||
     path.startsWith("/api/v1/admin/store/") ||
     (isMetadataRoute(path) && path.startsWith("/api/v1/admin/")) ||
     isSubmissionRoute(path) ||
@@ -129,6 +131,8 @@ async function routeRequest(
     url.pathname = "/api/v1/games";
     return routeRequest(new Request(url, request), env);
   }
+  if (url.pathname === "/api/v1/admin/identities/review")
+    return reviewExternalIdentity(request, env);
   if (url.pathname === "/api/v1/admin/identities/gog")
     return recordGogIdentity(request, env);
   if (isGameIdentitiesRoute(url.pathname)) return gameIdentities(request, env);

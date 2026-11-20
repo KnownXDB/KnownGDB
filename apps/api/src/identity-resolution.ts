@@ -261,3 +261,62 @@ export async function recordGogIdentity(request: Request, env: ApiEnvironment) {
     return reply({ error: "Identity could not be saved." }, 503);
   }
 }
+export async function reviewExternalIdentity(
+  request: Request,
+  env: ApiEnvironment,
+) {
+  if (request.method !== "POST")
+    return reply({ error: "Method not allowed." }, 405);
+  if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY)
+    return reply({ error: "Catalog connection unavailable." }, 503);
+  try {
+    const client = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      db: { retry: false },
+    });
+    const access = await verifyAdmin(client, request);
+    if (access instanceof Response) return access;
+    if (!access.superAdmin)
+      return reply({ error: "Super Admin permission required." }, 403);
+    const body = await readJsonObject(request);
+    if (body instanceof Response) return body;
+    const { id, expected, action, reason } = body;
+    if (
+      Object.keys(body).sort().join(",") !== "action,expected,id,reason" ||
+      typeof id !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        id,
+      ) ||
+      expected !== "in_review" ||
+      !["verified", "rejected"].includes(String(action)) ||
+      typeof reason !== "string" ||
+      !reason.trim() ||
+      reason.length > 2000
+    )
+      return reply(
+        { error: "Provide an identity, expected status, decision and reason." },
+        400,
+      );
+    const result = await client.rpc("admin_review_external_identity", {
+      p_actor: access.actor,
+      p_session: access.sessionId,
+      p_identity: id,
+      p_expected: expected,
+      p_action: action,
+      p_reason: reason,
+    });
+    if (result.error)
+      return reply(
+        {
+          error:
+            result.error.code === "40001" || result.error.code === "23505"
+              ? "Identity changed or conflicts; refresh and review."
+              : "Identity review unavailable.",
+        },
+        ["40001", "23505"].includes(result.error.code) ? 409 : 503,
+      );
+    return reply(result.data);
+  } catch {
+    return reply({ error: "Identity review unavailable." }, 503);
+  }
+}
