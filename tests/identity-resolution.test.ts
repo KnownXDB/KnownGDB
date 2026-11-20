@@ -431,7 +431,18 @@ test("intake preview requires credential, rejects duplicates and makes no catalo
 test("intake field comparison only reads published metadata for verified identities", async () => {
   let metadata: unknown = {
     revisionId: "revision",
-    data: { originalTitle: "Original", gameType: "game" },
+    data: {
+      originalTitle: "Original",
+      gameType: "game",
+      localizations: [
+        {
+          language: "en",
+          title: "Name",
+          summary: "Summary",
+          description: "Old",
+        },
+      ],
+    },
   };
   let identityStatus = "verified";
   const calls: string[] = [];
@@ -481,7 +492,14 @@ test("intake field comparison only reads published metadata for verified identit
                 kind: "game_id",
                 value: "12",
               },
-              proposal: { originalTitle: "Changed", gameType: "game" },
+              proposal: {
+                originalTitle: "Changed",
+                gameType: "game",
+                localizations: [
+                  { language: "en", title: "Name", description: "New" },
+                  { language: "es", summary: "Resumen" },
+                ],
+              },
             },
           ],
         }),
@@ -496,6 +514,29 @@ test("intake field comparison only reads published metadata for verified identit
       ),
       [true, false],
     );
+    assert.deepEqual(item.comparison.localizedFields, [
+      {
+        language: "en",
+        field: "title",
+        current: "Name",
+        proposed: "Name",
+        changed: false,
+      },
+      {
+        language: "en",
+        field: "description",
+        current: "Old",
+        proposed: "New",
+        changed: true,
+      },
+      {
+        language: "es",
+        field: "summary",
+        current: null,
+        proposed: "Resumen",
+        changed: true,
+      },
+    ]);
     metadata = null;
     response = await handleRequest(request(), env);
     item = (await response.json()).items[0];
