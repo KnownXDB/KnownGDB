@@ -1,3 +1,4 @@
+import { resolveIdentities } from "./identity-resolution.ts";
 import { catalogArtwork } from "./catalog-artwork.ts";
 import { catalogCovers } from "./catalog-covers.ts";
 import { catalogHome } from "./catalog-home.ts";
@@ -87,6 +88,7 @@ export async function handleRequest(
       "/api/v1/admin/session",
     ].includes(path) ||
     path === "/api/v1/admin/games" ||
+    path === "/api/v1/admin/identities/resolve" ||
     path.startsWith("/api/v1/admin/store/") ||
     (isMetadataRoute(path) && path.startsWith("/api/v1/admin/")) ||
     isSubmissionRoute(path) ||
@@ -121,6 +123,8 @@ async function routeRequest(
     return routeRequest(new Request(url, request), env);
   }
   if (isMetadataRoute(url.pathname)) return metadataRequest(request, env);
+  if (url.pathname === "/api/v1/admin/identities/resolve")
+    return resolveIdentities(request, env);
   if (url.pathname === "/api/v1/admin/games")
     return administrativeGames(request, env);
   if (isSubmissionRoute(url.pathname)) return submissionRequest(request, env);
