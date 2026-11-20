@@ -4,6 +4,7 @@ import {
   gameIdentities,
   isGameIdentitiesRoute,
   recordGogIdentity,
+  recordIgdbIdentity,
   reviewExternalIdentity,
 } from "./identity-resolution.ts";
 import { catalogArtwork } from "./catalog-artwork.ts";
@@ -100,6 +101,7 @@ export async function handleRequest(
     path === "/api/v1/admin/identities/resolve" ||
     isGameIdentitiesRoute(path) ||
     path === "/api/v1/admin/identities/gog" ||
+    path === "/api/v1/admin/identities/igdb" ||
     path === "/api/v1/admin/identities/review" ||
     path.startsWith("/api/v1/admin/store/") ||
     (isMetadataRoute(path) && path.startsWith("/api/v1/admin/")) ||
@@ -140,6 +142,8 @@ async function routeRequest(
   }
   if (url.pathname === "/api/v1/admin/identities/review")
     return reviewExternalIdentity(request, env);
+  if (url.pathname === "/api/v1/admin/identities/igdb")
+    return recordIgdbIdentity(request, env);
   if (url.pathname === "/api/v1/admin/identities/gog")
     return recordGogIdentity(request, env);
   if (isGameIdentitiesRoute(url.pathname)) return gameIdentities(request, env);

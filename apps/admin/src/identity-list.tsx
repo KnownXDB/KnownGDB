@@ -17,6 +17,7 @@ export function IdentityList() {
   const [items, setItems] = useState<Identity[]>([]);
   const [message, setMessage] = useState("");
   const [productId, setProductId] = useState("");
+  const [igdbId, setIgdbId] = useState("");
   const [source, setSource] = useState("");
   const [reason, setReason] = useState("");
   const [reviewReason, setReviewReason] = useState("");
@@ -63,6 +64,34 @@ export function IdentityList() {
         body.status === "existing"
           ? "Identity already exists; its current review state was preserved."
           : "Identity saved for review.",
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Identity could not be saved.",
+      );
+    }
+  }
+  async function submitIgdb(event: React.FormEvent) {
+    event.preventDefault();
+    setMessage("Saving identity…");
+    try {
+      const response = await fetch("/api/v1/admin/identities/igdb", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gameId: gameId.trim(),
+          igdbId: igdbId.trim(),
+          source: source.trim(),
+          reason: reason.trim(),
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok)
+        throw Error(body.error || "Identity could not be saved.");
+      setMessage(
+        body.status === "existing"
+          ? "Identity already exists; review state was preserved."
+          : "IGDB identity saved for review.",
       );
     } catch (error) {
       setMessage(
@@ -153,6 +182,28 @@ export function IdentityList() {
           Save for review
         </button>
       </form>
+      <form onSubmit={submitIgdb} className="steam-preview-form">
+        <h3>Record IGDB game ID</h3>
+        <p>
+          Uses the catalog UUID, evidence URL and reason above. The association
+          remains in review.
+        </p>
+        <label>
+          <span>IGDB game ID</span>
+          <input
+            required
+            pattern="[1-9][0-9]{0,9}"
+            value={igdbId}
+            onChange={(event) => setIgdbId(event.target.value)}
+          />
+        </label>
+        <button
+          type="submit"
+          disabled={!gameId.trim() || !source.trim() || !reason.trim()}
+        >
+          Save for review
+        </button>
+      </form>
       <p role="status">{message}</p>
       <label>
         <span>Identity review reason</span>
@@ -169,8 +220,10 @@ export function IdentityList() {
             {item.value} ({item.namespace}; {item.scope}; {item.region}
             {item.locale ? ` / ${item.locale}` : ""}; {item.evidence_status})
             <p>Evidence: {item.source_reference}</p>
-            {item.provider === "gog" &&
-              item.namespace === "gog.product_id" &&
+            {((item.provider === "gog" &&
+              item.namespace === "gog.product_id") ||
+              (item.provider === "igdb" &&
+                item.namespace === "igdb.game_id")) &&
               item.evidence_status === "in_review" && (
                 <>
                   <button

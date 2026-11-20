@@ -73,7 +73,7 @@ const migrationFiles = fs
   .readdirSync("supabase/migrations")
   .filter((name) => name.endsWith(".sql"))
   .sort();
-assert.equal(migrationFiles.length, 29);
+assert.equal(migrationFiles.length, 30);
 const sql = migrationFiles.map((file) =>
   fs.readFileSync(path.join("supabase/migrations", file), "utf8"),
 );
@@ -181,6 +181,14 @@ try {
   try {
     await fresh.query(
       fs.readFileSync("supabase/tests/external-identities.sql", "utf8"),
+    );
+  } finally {
+    await fresh.query("rollback");
+  }
+  await fresh.query("begin");
+  try {
+    await fresh.query(
+      fs.readFileSync("supabase/tests/igdb-identity.sql", "utf8"),
     );
   } finally {
     await fresh.query("rollback");

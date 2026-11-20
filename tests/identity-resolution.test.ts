@@ -339,3 +339,16 @@ test("integration resolution enforces credential result and quota before lookup"
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
 });
+test("IGDB identity submission requires active administration", async () => {
+  const env = {
+    SUPABASE_URL: "http://127.0.0.1:1",
+    SUPABASE_SECRET_KEY: "fixture-only",
+  };
+  const response = await handleRequest(
+    new Request("http://localhost/api/v1/admin/identities/igdb", {
+      method: "POST",
+    }),
+    env,
+  );
+  assert.equal(response.status, 401);
+});

@@ -32,3 +32,13 @@ Other provider identifiers are outside this review endpoint's current scope.
 The GOG submission and review functions use the same advisory lock. Other future
 writers must follow the same coordination rules. A separate authorized migration
 is required before this functionality can be used against a hosted database.
+
+## IGDB game identities
+
+Super Admins can submit an IGDB game ID as `igdb` / `igdb.game_id` /
+`game_id` for an existing canonical catalog item. Submission requires source
+and reason, creates an in-review association, serializes matching submissions,
+and refuses a non-rejected match on another item. Retrying preserves the existing
+review status. The same review transaction supports IGDB and retains its audit,
+expected-state and conflict checks. It does not grant machine write access or
+create a catalog item. Deployment and database activation are separate steps.
