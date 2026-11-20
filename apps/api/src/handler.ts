@@ -1,3 +1,4 @@
+import { termIdentityRequest } from "./term-identities.ts";
 import { previewIntake } from "./intake-preview.ts";
 import { integrationCredentials } from "./integration-credentials.ts";
 import {
@@ -98,6 +99,7 @@ export async function handleRequest(
       "/api/v1/admin/session",
     ].includes(path) ||
     path === "/api/v1/admin/integration-credentials" ||
+    path === "/api/v1/admin/term-identities" ||
     path === "/api/v1/admin/games" ||
     path === "/api/v1/admin/identities/resolve" ||
     isGameIdentitiesRoute(path) ||
@@ -130,6 +132,13 @@ async function routeRequest(
   if (isCatalogGameRoute(url.pathname)) return catalogGame(request, env);
   if (url.pathname === "/api/v1/catalog/featured-artwork")
     return catalogFeaturedArtwork(request, env);
+  if (
+    [
+      "/api/v1/admin/term-identities",
+      "/api/v1/integrations/term-identities/resolve",
+    ].includes(url.pathname)
+  )
+    return termIdentityRequest(request, env);
   if (url.pathname === "/api/v1/admin/integration-credentials")
     return integrationCredentials(request, env);
   if (url.pathname === "/api/v1/integrations/intake/preview")
