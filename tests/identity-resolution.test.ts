@@ -428,3 +428,96 @@ test("intake preview requires credential, rejects duplicates and makes no catalo
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
 });
+test("intake field comparison only reads published metadata for verified identities", async () => {
+  let metadata: unknown = {
+    revisionId: "revision",
+    data: { originalTitle: "Original", gameType: "game" },
+  };
+  let identityStatus = "verified";
+  const calls: string[] = [];
+  const server = createServer((req, res) => {
+    const url = new URL(req.url!, "http://localhost");
+    calls.push(`${req.method} ${url.pathname}`);
+    res.setHeader("Content-Type", "application/json");
+    if (url.pathname.endsWith("/consume_integration_credential"))
+      return res.end('"allowed"');
+    if (url.pathname.endsWith("/external_identities"))
+      return res.end(
+        JSON.stringify([
+          {
+            game_id: "00000000-0000-4000-8000-000000000003",
+            evidence_status: identityStatus,
+          },
+        ]),
+      );
+    if (url.pathname.endsWith("/published_game_metadata"))
+      return res.end(JSON.stringify(metadata));
+    res.statusCode = 404;
+    res.end("{}");
+  });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  try {
+    const env = {
+      SUPABASE_URL: `http://127.0.0.1:${address.port}`,
+      SUPABASE_SECRET_KEY: "fixture-only",
+    };
+    const request = () =>
+      new Request("http://localhost/api/v1/integrations/intake/preview", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer kgsvc_${"a".repeat(43)}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          items: [
+            {
+              clientId: "job",
+              identity: {
+                provider: "igdb",
+                namespace: "igdb.game_id",
+                kind: "game_id",
+                value: "12",
+              },
+              proposal: { originalTitle: "Changed", gameType: "game" },
+            },
+          ],
+        }),
+      });
+    let response = await handleRequest(request(), env);
+    assert.equal(response.status, 200);
+    let item = (await response.json()).items[0];
+    assert.equal(item.comparison.revisionId, "revision");
+    assert.deepEqual(
+      item.comparison.fields.map(
+        (field: { changed: boolean }) => field.changed,
+      ),
+      [true, false],
+    );
+    metadata = null;
+    response = await handleRequest(request(), env);
+    item = (await response.json()).items[0];
+    assert.equal(item.comparison.status, "unavailable");
+    const before = calls.filter((call) =>
+      call.endsWith("/published_game_metadata"),
+    ).length;
+    identityStatus = "in_review";
+    response = await handleRequest(request(), env);
+    item = (await response.json()).items[0];
+    assert.equal(item.comparison.status, "unavailable");
+    assert.equal(
+      calls.filter((call) => call.endsWith("/published_game_metadata")).length,
+      before,
+    );
+    assert.ok(
+      !calls.some((call) =>
+        /admin_game_metadata|save_game_metadata/.test(call),
+      ),
+    );
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});
