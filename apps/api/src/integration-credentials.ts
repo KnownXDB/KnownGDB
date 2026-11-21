@@ -39,7 +39,13 @@ export async function integrationCredentials(
       revoking = request.method === "DELETE";
     if (
       (creating &&
-        (Object.keys(body).sort().join(",") !== "expiresAt,name,reason" ||
+        (![
+          ["expiresAt", "name", "reason"].join(","),
+          ["expiresAt", "name", "reason", "scope"].join(","),
+        ].includes(Object.keys(body).sort().join(",")) ||
+          (body.scope !== undefined &&
+            body.scope !== "identity:resolve" &&
+            body.scope !== "intake:text") ||
           typeof body.name !== "string" ||
           !body.name.trim() ||
           body.name.length > 80 ||
@@ -61,6 +67,23 @@ export async function integrationCredentials(
     const key = creating
       ? `kgsvc_${randomBytes(32).toString("base64url")}`
       : null;
+    if (creating && body.scope === "intake:text") {
+      const created = await client.rpc("create_text_transfer_credential", {
+        p_actor: access.actor,
+        p_session: access.sessionId,
+        p_name: body.name,
+        p_hash: hashApiKey(key!),
+        p_prefix: key!.slice(0, 13),
+        p_expires: body.expiresAt,
+        p_reason: body.reason,
+      });
+      if (created.error)
+        return reply(
+          { error: "Credential operation unavailable." },
+          created.error.code === "22023" ? 400 : 503,
+        );
+      return reply({ ...created.data, key }, 201);
+    }
     const result = await client.rpc("manage_integration_credential", {
       p_actor: access.actor,
       p_session: access.sessionId,

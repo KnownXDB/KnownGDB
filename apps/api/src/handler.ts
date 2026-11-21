@@ -1,3 +1,4 @@
+import { textTransferRequest } from "./text-transfer.ts";
 import { termIdentityRequest } from "./term-identities.ts";
 import { previewIntake } from "./intake-preview.ts";
 import { integrationCredentials } from "./integration-credentials.ts";
@@ -141,6 +142,8 @@ async function routeRequest(
     return termIdentityRequest(request, env);
   if (url.pathname === "/api/v1/admin/integration-credentials")
     return integrationCredentials(request, env);
+  if (url.pathname === "/api/v1/integrations/text-transfer")
+    return textTransferRequest(request, env);
   if (url.pathname === "/api/v1/integrations/intake/preview")
     return previewIntake(request, env);
   if (url.pathname === "/api/v1/integrations/identities/resolve")

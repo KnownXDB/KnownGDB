@@ -73,7 +73,7 @@ const migrationFiles = fs
   .readdirSync("supabase/migrations")
   .filter((name) => name.endsWith(".sql"))
   .sort();
-assert.equal(migrationFiles.length, 32);
+assert.equal(migrationFiles.length, 33);
 const sql = migrationFiles.map((file) =>
   fs.readFileSync(path.join("supabase/migrations", file), "utf8"),
 );
@@ -119,7 +119,7 @@ try {
   const tables = await fresh.query(
     "select relname,relrowsecurity from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='catalog' and c.relkind='r'",
   );
-  assert.equal(tables.rows.length, 30);
+  assert.equal(tables.rows.length, 32);
   assert.ok(tables.rows.every((row) => row.relrowsecurity));
   for (const role of ["anon", "authenticated"]) {
     assert.equal(
@@ -167,6 +167,14 @@ try {
   try {
     await fresh.query(
       fs.readFileSync("supabase/tests/term-identities.sql", "utf8"),
+    );
+  } finally {
+    await fresh.query("rollback");
+  }
+  await fresh.query("begin");
+  try {
+    await fresh.query(
+      fs.readFileSync("supabase/tests/text-transfer.sql", "utf8"),
     );
   } finally {
     await fresh.query("rollback");
