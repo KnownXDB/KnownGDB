@@ -50,8 +50,9 @@ export async function integrationCredentials(
           !body.name.trim() ||
           body.name.length > 80 ||
           /[\p{Cc}\p{Cf}<>]/u.test(body.name) ||
-          typeof body.expiresAt !== "string" ||
-          !Number.isFinite(Date.parse(body.expiresAt)))) ||
+          (body.expiresAt !== null &&
+            (typeof body.expiresAt !== "string" ||
+              !Number.isFinite(Date.parse(body.expiresAt)))))) ||
       (revoking &&
         (Object.keys(body).sort().join(",") !== "id,reason" ||
           typeof body.id !== "string" ||
