@@ -1,3 +1,4 @@
+import { textTransferBodyLimit } from "./text-transfer.ts";
 import { intakePreviewBodyLimit } from "./intake-preview.ts";
 import { uploadLimit } from "./submissions.ts";
 import { metadataBodyLimit } from "./game-metadata.ts";
@@ -26,20 +27,23 @@ export function createApiServer(
       let size = 0;
       const incomingLimit =
         incoming.method === "POST" &&
-        incoming.url === "/api/v1/integrations/intake/preview"
-          ? intakePreviewBodyLimit
-          : incoming.method === "PUT" &&
-              /^\/api\/v1\/submissions\/[0-9a-f-]+\/original$/.test(
-                incoming.url ?? "",
-              )
-            ? uploadLimit
-            : incoming.method === "POST" &&
-                (incoming.url === "/api/v1/admin/games" ||
-                  /^\/api\/v1\/admin\/games\/[0-9a-f-]+\/metadata$/.test(
-                    incoming.url ?? "",
-                  ))
-              ? metadataBodyLimit
-              : 4096;
+        incoming.url === "/api/v1/integrations/text-transfer"
+          ? textTransferBodyLimit
+          : incoming.method === "POST" &&
+              incoming.url === "/api/v1/integrations/intake/preview"
+            ? intakePreviewBodyLimit
+            : incoming.method === "PUT" &&
+                /^\/api\/v1\/submissions\/[0-9a-f-]+\/original$/.test(
+                  incoming.url ?? "",
+                )
+              ? uploadLimit
+              : incoming.method === "POST" &&
+                  (incoming.url === "/api/v1/admin/games" ||
+                    /^\/api\/v1\/admin\/games\/[0-9a-f-]+\/metadata$/.test(
+                      incoming.url ?? "",
+                    ))
+                ? metadataBodyLimit
+                : 4096;
       for await (const chunk of incoming) {
         size += chunk.length;
         if (size > incomingLimit) {
