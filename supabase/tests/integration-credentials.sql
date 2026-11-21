@@ -19,6 +19,9 @@ begin
   perform public.manage_integration_credential(actor,session,'revoke',key_id,null,null,null,null,'Retired');
   assert public.consume_integration_credential(repeat('a',64),'identity:resolve')='denied';
   assert (select count(*) from catalog.integration_credential_events where credential_id=key_id)=2;
+  result:=public.manage_integration_credential(actor,session,'create',null,'No expiry',repeat('c',64),'kgsvc_abc1234',null,'Test');
+  assert result->'expiresAt'='null'::jsonb;
+  assert public.consume_integration_credential(repeat('c',64),'identity:resolve')='allowed';
   update catalog.admin_members set role='moderator' where user_id=actor;
   begin
     perform public.manage_integration_credential(actor,session,'list',null,null,null,null,null,null);

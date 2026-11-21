@@ -6,7 +6,7 @@ type Credential = {
   id: string;
   name: string;
   scope: string;
-  expiresAt: string;
+  expiresAt: string | null;
   revokedAt: string | null;
 };
 const endpoint = "/api/v1/admin/integration-credentials";
@@ -72,9 +72,12 @@ export function IntegrationCredentials() {
         : {
             name: String(fields.get("name")).trim(),
             scope: fields.get("scope"),
-            expiresAt: new Date(
-              Date.now() + Number(fields.get("days")) * 86_400_000,
-            ).toISOString(),
+            expiresAt:
+              fields.get("days") === "never"
+                ? null
+                : new Date(
+                    Date.now() + Number(fields.get("days")) * 86_400_000,
+                  ).toISOString(),
             reason,
           };
       const response = await fetch(endpoint, {
@@ -141,15 +144,13 @@ export function IntegrationCredentials() {
               </Select>
             </label>
             <label>
-              Expires in (days)
-              <input
-                name="days"
-                type="number"
-                min={1}
-                max={365}
-                defaultValue={30}
-                required
-              />
+              Expiration
+              <Select name="days" aria-label="Expiration" defaultValue="never">
+                <option value="never">Never expires</option>
+                <option value="30">30 days</option>
+                <option value="90">90 days</option>
+                <option value="365">1 year</option>
+              </Select>
             </label>
             <label>
               Creation reason
@@ -179,11 +180,15 @@ export function IntegrationCredentials() {
           <article key={row.id}>
             <h3>{row.name}</h3>
             <p>
-              {row.scope} · Expires {new Date(row.expiresAt).toLocaleString()}
+              {row.scope} ·{" "}
+              {row.expiresAt
+                ? `Expires ${new Date(row.expiresAt).toLocaleString()}`
+                : "Never expires"}
             </p>
             {row.revokedAt ? (
               <p>Revoked</p>
-            ) : Date.parse(row.expiresAt) <= Date.now() ? (
+            ) : row.expiresAt !== null &&
+              Date.parse(row.expiresAt) <= Date.now() ? (
               <p>Expired</p>
             ) : revoking === row.id ? (
               <form onSubmit={(e) => void save(e, row.id)}>

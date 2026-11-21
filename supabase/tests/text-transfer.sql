@@ -4,7 +4,7 @@ set local role service_role;
 do $$
 declare actor uuid:='00000000-0000-4000-8000-000000000001'; session uuid:='00000000-0000-4000-8000-000000000081'; hash text:=repeat('a',64); identity_hash text:=repeat('b',64); other_hash text:=repeat('c',64); client uuid:=gen_random_uuid(); transfer uuid; result jsonb; full_text text:=repeat('ñ',550000); data bytea; part bytea; i integer; size integer;
 begin
- perform public.create_text_transfer_credential(actor,session,'Text test',hash,'kgsvc_abc1234',now()+interval '30 days','Test');
+ perform public.create_text_transfer_credential(actor,session,'Text test',hash,'kgsvc_abc1234',null,'Test');
  perform public.manage_integration_credential(actor,session,'create',null,'Read only',identity_hash,'kgsvc_def5678',now()+interval '30 days','Test');
  perform public.create_text_transfer_credential(actor,session,'Other test',other_hash,'kgsvc_ghi9012',now()+interval '30 days','Test');
  data:=convert_to(full_text,'UTF8'); size:=octet_length(data);

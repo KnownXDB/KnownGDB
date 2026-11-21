@@ -2,8 +2,8 @@
 
 Status: local implementation; hosted activation and real-service acceptance pending.
 
-A Super Admin with an active session can issue and revoke time-limited service
-credentials. Secrets are generated server-side, shown once and stored as hashes.
+A Super Admin with an active session can issue and revoke service
+credentials with an optional expiration. Secrets are generated server-side, shown once and stored as hashes.
 Creation and revocation record an actor and reason. A dedicated credential grants
 only `identity:resolve`; consumption keys and account sessions do not acquire
 this scope. The integration resolution endpoint uses HTTPS outside loopback,
