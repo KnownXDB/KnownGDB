@@ -114,7 +114,11 @@ export function classifyCandidates(rows: Candidate[], truncated: boolean) {
     return { status: "review", gameId: null };
   return { status: "matched", gameId: ids[0] };
 }
-export async function resolveIdentities(request: Request, env: ApiEnvironment) {
+export async function resolveIdentities(
+  request: Request,
+  env: ApiEnvironment,
+  parsed?: Identity[],
+) {
   if (request.method !== "POST")
     return reply({ error: "Method not allowed." }, 405);
   if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY)
@@ -156,32 +160,28 @@ export async function resolveIdentities(request: Request, env: ApiEnvironment) {
       const access = await verifyAdmin(client, request);
       if (access instanceof Response) return access;
     }
-    const body = await readJsonObject(request);
-    if (body instanceof Response) return body;
-    const identities = parseIdentities(body);
+    let identities = parsed ?? null;
+    if (!identities) {
+      const body = await readJsonObject(request);
+      if (body instanceof Response) return body;
+      identities = parseIdentities(body);
+    }
     if (!identities)
       return reply({ error: "Provide 1 to 20 valid identities." }, 400);
-    const results = [];
-    for (const identity of identities) {
-      const result = await client
-        .schema("catalog")
-        .from("external_identities")
-        .select("game_id,evidence_status,valid_from,valid_until")
-        .eq("provider", identity.provider)
-        .eq("namespace", identity.namespace)
-        .eq("identifier_kind", identity.kind)
-        .eq("normalized_value", identity.value)
-        .limit(101);
-      if (result.error)
-        return reply({ error: "Identity resolution unavailable." }, 503);
-      results.push({
-        identity,
-        ...classifyCandidates(
-          result.data ?? [],
-          (result.data?.length ?? 0) > 100,
-        ),
-      });
-    }
+    const { data, error } = await client.rpc("batch_identity_candidates", {
+      p_identities: identities,
+    });
+    if (
+      error ||
+      !Array.isArray(data) ||
+      data.length !== identities.length ||
+      !data.every(Array.isArray)
+    )
+      return reply({ error: "Identity resolution unavailable." }, 503);
+    const results = identities.map((identity, index) => ({
+      identity,
+      ...classifyCandidates(data[index], data[index].length > 100),
+    }));
     return reply({ results });
   } catch {
     return reply({ error: "Identity resolution unavailable." }, 503);

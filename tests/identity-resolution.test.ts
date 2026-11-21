@@ -80,6 +80,22 @@ test("authenticated lookup preserves provider and kind for official store identi
     if (url.pathname.endsWith("/admin_members"))
       return res.end(JSON.stringify([{ role: "super_admin" }]));
     if (url.pathname.endsWith("/admin_check")) return res.end("true");
+    if (url.pathname.endsWith("/batch_identity_candidates")) {
+      let body = "";
+      req.on("data", (chunk) => (body += chunk));
+      req.on("end", () => {
+        const { p_identities } = JSON.parse(body);
+        queries.push(body);
+        res.end(
+          JSON.stringify(
+            p_identities.map(() => [
+              { game_id: game, evidence_status: "verified" },
+            ]),
+          ),
+        );
+      });
+      return;
+    }
     if (url.pathname.endsWith("/external_identities")) {
       queries.push(url.search);
       return res.end(
@@ -131,7 +147,8 @@ test("authenticated lookup preserves provider and kind for official store identi
       body.results.map((entry: { gameId: string }) => entry.gameId),
       identities.map(() => game),
     );
-    assert.equal(queries.length, 6);
+    assert.equal(queries.length, 1);
+    assert.deepEqual(JSON.parse(queries[0]).p_identities, identities);
     const listing = await handleRequest(
       new Request(`http://localhost/api/v1/admin/games/${game}/identities`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -143,12 +160,7 @@ test("authenticated lookup preserves provider and kind for official store identi
     );
     assert.equal(listing.status, 200);
     assert.equal((await listing.json()).truncated, false);
-    assert.equal(new URLSearchParams(queries[6]).get("game_id"), `eq.${game}`);
-    for (let i = 0; i < identities.length; i++) {
-      const params = new URLSearchParams(queries[i]);
-      assert.equal(params.get("provider"), `eq.${identities[i].provider}`);
-      assert.equal(params.get("identifier_kind"), "eq.product_id");
-    }
+    assert.equal(new URLSearchParams(queries[1]).get("game_id"), `eq.${game}`);
   } finally {
     server.closeAllConnections();
     await new Promise<void>((resolve) => server.close(() => resolve()));
@@ -288,9 +300,9 @@ test("integration resolution enforces credential result and quota before lookup"
     res.setHeader("Content-Type", "application/json");
     if (url.pathname.endsWith("/consume_integration_credential"))
       return res.end(JSON.stringify(decision));
-    if (url.pathname.endsWith("/external_identities")) {
+    if (url.pathname.endsWith("/batch_identity_candidates")) {
       lookups++;
-      return res.end("[]");
+      return res.end("[[]]");
     }
     res.statusCode = 404;
     res.end("{}");
@@ -361,7 +373,8 @@ test("intake preview requires credential, rejects duplicates and makes no catalo
     res.setHeader("Content-Type", "application/json");
     if (url.pathname.endsWith("/consume_integration_credential"))
       return res.end(JSON.stringify(auth));
-    if (url.pathname.endsWith("/external_identities")) return res.end("[]");
+    if (url.pathname.endsWith("/batch_identity_candidates"))
+      return res.end("[[]]");
     res.statusCode = 404;
     res.end("{}");
   });
@@ -406,7 +419,7 @@ test("intake preview requires credential, rejects duplicates and makes no catalo
     assert.ok(
       calls.every(
         (call) =>
-          call.startsWith("GET ") ||
+          call.endsWith("/batch_identity_candidates") ||
           call.endsWith("/consume_integration_credential"),
       ),
     );
@@ -461,17 +474,21 @@ test("intake field comparison only reads published metadata for verified identit
     res.setHeader("Content-Type", "application/json");
     if (url.pathname.endsWith("/consume_integration_credential"))
       return res.end('"allowed"');
-    if (url.pathname.endsWith("/external_identities"))
+    if (url.pathname.endsWith("/batch_identity_candidates"))
       return res.end(
         JSON.stringify([
-          {
-            game_id: "00000000-0000-4000-8000-000000000003",
-            evidence_status: identityStatus,
-          },
+          [
+            {
+              game_id: "00000000-0000-4000-8000-000000000003",
+              evidence_status: identityStatus,
+            },
+          ],
         ]),
       );
-    if (url.pathname.endsWith("/published_game_metadata"))
-      return res.end(JSON.stringify(metadata));
+    if (url.pathname.endsWith("/batch_published_metadata"))
+      return res.end(
+        JSON.stringify({ "00000000-0000-4000-8000-000000000003": metadata }),
+      );
     res.statusCode = 404;
     res.end("{}");
   });
@@ -581,14 +598,14 @@ test("intake field comparison only reads published metadata for verified identit
     item = (await response.json()).items[0];
     assert.equal(item.comparison.status, "unavailable");
     const before = calls.filter((call) =>
-      call.endsWith("/published_game_metadata"),
+      call.endsWith("/batch_published_metadata"),
     ).length;
     identityStatus = "in_review";
     response = await handleRequest(request(), env);
     item = (await response.json()).items[0];
     assert.equal(item.comparison.status, "unavailable");
     assert.equal(
-      calls.filter((call) => call.endsWith("/published_game_metadata")).length,
+      calls.filter((call) => call.endsWith("/batch_published_metadata")).length,
       before,
     );
     assert.ok(
@@ -634,5 +651,92 @@ test("entity proposals reject invalid and duplicate identities before lookup", a
       },
     );
     assert.equal((await handleRequest(request, env)).status, 400);
+  }
+});
+
+test("twenty preview proposals share one lookup batch and one read per matched game", async () => {
+  const game = "00000000-0000-4000-8000-000000000003";
+  const items = Array.from({ length: 20 }, (_, index) => ({
+    clientId: "item_" + index,
+    identity: {
+      provider: "fixture",
+      namespace: "product",
+      kind: "id",
+      value: "x".repeat(220) + index,
+    },
+    proposal: { originalTitle: "Title " + index },
+  }));
+  const calls: string[] = [];
+  const server = createServer(async (req, res) => {
+    const path = req.url!.split("/").pop()!;
+    calls.push(path);
+    res.setHeader("Content-Type", "application/json");
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    if (path === "consume_integration_credential") return res.end('"allowed"');
+    if (path === "batch_identity_candidates") {
+      assert.deepEqual(
+        JSON.parse(body).p_identities,
+        items.map((item) => item.identity),
+      );
+      return res.end(
+        JSON.stringify(
+          items.map((_, i) =>
+            i === 19 ? [] : [{ game_id: game, evidence_status: "verified" }],
+          ),
+        ),
+      );
+    }
+    if (path === "batch_published_metadata") {
+      assert.deepEqual(JSON.parse(body).p_games, [game]);
+      return res.end(
+        JSON.stringify({
+          [game]: {
+            revisionId: "approved",
+            data: { originalTitle: "Title 0" },
+          },
+        }),
+      );
+    }
+    res.writeHead(404).end();
+  });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  try {
+    const address = server.address();
+    assert.ok(address && typeof address !== "string");
+    const response = await handleRequest(
+      new Request("http://localhost/api/v1/integrations/intake/preview", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer kgsvc_" + "a".repeat(43),
+        },
+        body: JSON.stringify({ items }),
+      }),
+      {
+        SUPABASE_URL: "http://127.0.0.1:" + address.port,
+        SUPABASE_SECRET_KEY: "fixture-only",
+      },
+    );
+    assert.equal(response.status, 200);
+    const result = await response.json();
+    for (const [i, item] of items.entries()) {
+      const output = result.items[i];
+      assert.equal(output.clientId, item.clientId);
+      assert.equal(
+        output.decision,
+        i === 19 ? "review_new" : "review_existing",
+      );
+      if (i !== 19) assert.equal(output.comparison.fields[0].changed, i !== 0);
+    }
+    assert.deepEqual(calls, [
+      "consume_integration_credential",
+      "batch_identity_candidates",
+      "batch_published_metadata",
+    ]);
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
   }
 });

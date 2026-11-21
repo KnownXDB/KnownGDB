@@ -229,9 +229,10 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
         Authorization: request.headers.get("authorization") ?? "",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ identities }),
+      signal: request.signal,
     }),
     env,
+    identities,
   );
   if (!response.ok) return response;
   const resolved = (await response.json()) as {
@@ -241,18 +242,39 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
     auth: { persistSession: false, autoRefreshToken: false },
     db: { retry: false },
   });
+  const gameIds = [
+    ...new Set(
+      resolved.results.flatMap((result, index) =>
+        items[index].proposal && result.status === "matched" && result.gameId
+          ? [result.gameId]
+          : [],
+      ),
+    ),
+  ];
+  let metadata: Record<
+    string,
+    { revisionId: string; data: Record<string, unknown> } | null
+  > = {};
+  if (gameIds.length) {
+    const batch = await client.rpc("batch_published_metadata", {
+      p_games: gameIds,
+    });
+    if (
+      batch.error ||
+      !batch.data ||
+      !gameIds.every((id) => Object.hasOwn(batch.data, id))
+    )
+      return reply({ error: "Published metadata unavailable." }, 503);
+    metadata = batch.data;
+  }
   const previews = [];
   for (const [index, result] of resolved.results.entries()) {
     const proposal = items[index].proposal;
     let comparison: unknown = null;
     if (proposal && result.status === "matched" && result.gameId) {
-      const published = await client.rpc("published_game_metadata", {
-        p_game: result.gameId,
-      });
-      if (published.error)
-        return reply({ error: "Published metadata unavailable." }, 503);
-      if (published.data?.data) {
-        const existing = published.data.data as Record<string, unknown>;
+      const published = metadata[result.gameId];
+      if (published?.data) {
+        const existing = published.data;
         if (
           Object.keys(proposal)
             .filter(
@@ -264,7 +286,7 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
           return reply({ error: "Published metadata unavailable." }, 503);
         comparison = {
           status: "available",
-          revisionId: published.data.revisionId,
+          revisionId: published.revisionId,
           fields: Object.entries(proposal)
             .filter(
               ([field]) =>

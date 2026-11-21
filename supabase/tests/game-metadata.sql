@@ -38,6 +38,8 @@ begin
   payload:=jsonb_set(payload,'{localizations,0,title}','"Pending replacement"');
   second:=public.save_game_metadata(actor,session,game,first,payload,'New evidence',0.9,'Pending change');
   if public.published_game_metadata(game)->>'revisionId'<>first::text then raise exception 'Pending revision replaced public revision';end if;
+  if public.batch_published_metadata(array[game,game]) is distinct from
+    jsonb_build_object(game::text, public.published_game_metadata(game) - 'terms') then raise exception 'Batch published revision mismatch'; end if;
   if not exists(select 1 from catalog.game_localizations where game_id=game and language='en' and title='Reviewed fixture title') then raise exception 'Pending title exposed';end if;
   begin perform public.save_game_metadata(actor,session,game,first,payload,'Evidence',0.9,'Stale edit');raise exception 'Stale revision accepted';exception when serialization_failure then null;end;
   begin perform public.approve_game_metadata(actor,session,game,first,'Stale approval');raise exception 'Stale approval accepted';exception when serialization_failure then null;end;
