@@ -39,3 +39,9 @@ report whether a platform UUID appears in any approved release; this does not
 compare release dates, editions or regions. These are presence checks only:
 unmentioned entries are not removals, and a missing ID is not proof that the
 term exists or should be created. Provider names must be resolved separately.
+
+Identity resolution reads all candidate sets in one RPC with a separate
+101-row ceiling per identity. Preview reads the approved metadata in a second
+batch for distinct matched games with proposals. Correlation and differences
+remain per input item. Including the credential check, a preview requires at
+most three API-to-database round trips.

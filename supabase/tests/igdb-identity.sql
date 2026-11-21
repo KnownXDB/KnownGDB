@@ -18,6 +18,9 @@ begin
   exception when invalid_parameter_value then null; end;
   result:=public.admin_review_external_identity('00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000061',ident,'in_review','verified','Reviewed evidence');
   if result->>'status'<>'verified' or not exists(select 1 from catalog.external_identities where id=ident and last_verified_at is not null) then raise exception 'Verification failed'; end if;
+  result := public.batch_identity_candidates('[{"provider":"igdb","namespace":"igdb.game_id","kind":"game_id","value":"missing"},{"provider":"igdb","namespace":"igdb.game_id","kind":"game_id","value":"123456"}]');
+  if result->0 is distinct from '[]'::jsonb or result#>>'{1,0,game_id}' is distinct from target::text
+     or result#>>'{1,0,evidence_status}' is distinct from 'verified' then raise exception 'Batch candidate mismatch'; end if;
   begin
     perform public.admin_review_external_identity('00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000061',ident,'in_review','rejected','Stale review');
     raise exception 'Stale review accepted';
