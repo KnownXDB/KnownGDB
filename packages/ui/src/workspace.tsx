@@ -9,6 +9,7 @@ import {
   Search,
   ArrowLeft,
   Store,
+  KeyRound,
   type LucideIcon,
 } from "lucide-react";
 import "simplebar-react/dist/simplebar.min.css";
@@ -245,10 +246,12 @@ export function useWorkspaceRoute(
 }
 export function Workspace({
   admin = false,
+  showIntegrationCredentials = false,
   route,
   children,
 }: {
   admin?: boolean;
+  showIntegrationCredentials?: boolean;
   route: string;
   children: ReactNode;
 }) {
@@ -263,6 +266,15 @@ export function Workspace({
         { path: "/uploads", label: "Upload assets", icon: Upload },
         { path: "/moderation", label: "Moderation", icon: ShieldCheck },
         { path: "/stores", label: "Store observations", icon: Store },
+        ...(showIntegrationCredentials
+          ? [
+              {
+                path: "/integration-credentials",
+                label: "Integration credentials",
+                icon: KeyRound,
+              },
+            ]
+          : []),
         { path: "/account", label: "Account", icon: UserRound },
       ]
     : [
