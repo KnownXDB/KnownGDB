@@ -101,7 +101,10 @@ test("text transfer credentials require explicit scope and return a secret only 
     if (path.endsWith("/admin_members"))
       return res.end(JSON.stringify([{ role: "super_admin" }]));
     if (path.endsWith("/admin_check")) return res.end("true");
-    if (path.endsWith("/create_text_transfer_credential")) {
+    if (
+      path.endsWith("/create_text_transfer_credential") ||
+      path.endsWith("/create_multi_scope_credential")
+    ) {
       scopeCall = path;
       let raw = "";
       for await (const chunk of req) raw += chunk;
@@ -154,6 +157,49 @@ test("text transfer credentials require explicit scope and return a secret only 
     );
     assert.notEqual(payload.p_hash, body.key);
     assert.equal(payload.p_prefix, body.key.slice(0, 13));
+    const combined = await handleRequest(
+      new Request("http://localhost/api/v1/admin/integration-credentials", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Origin: "http://localhost",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: "Combined",
+          scopes: ["identity:resolve", "intake:text"],
+          expiresAt: null,
+          reason: "Fixture",
+        }),
+      }),
+      env,
+    );
+    assert.equal(combined.status, 201);
+    assert.ok(scopeCall.endsWith("/create_multi_scope_credential"));
+    for (const scopes of [
+      [],
+      ["identity:resolve", "identity:resolve"],
+      ["identity:resolve", "unknown"],
+    ]) {
+      const rejected = await handleRequest(
+        new Request("http://localhost/api/v1/admin/integration-credentials", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Origin: "http://localhost",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: "Invalid",
+            scopes,
+            expiresAt: null,
+            reason: "Fixture",
+          }),
+        }),
+        env,
+      );
+      assert.equal(rejected.status, 400);
+    }
   } finally {
     server.closeAllConnections();
     await new Promise<void>((resolve) => server.close(() => resolve()));

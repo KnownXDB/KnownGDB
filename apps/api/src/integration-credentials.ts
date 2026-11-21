@@ -42,7 +42,18 @@ export async function integrationCredentials(
         (![
           ["expiresAt", "name", "reason"].join(","),
           ["expiresAt", "name", "reason", "scope"].join(","),
+          ["expiresAt", "name", "reason", "scopes"].join(","),
         ].includes(Object.keys(body).sort().join(",")) ||
+          (body.scopes !== undefined &&
+            (!Array.isArray(body.scopes) ||
+              body.scope !== undefined ||
+              body.scopes.length < 1 ||
+              body.scopes.length > 2 ||
+              new Set(body.scopes).size !== body.scopes.length ||
+              body.scopes.some(
+                (scope) =>
+                  scope !== "identity:resolve" && scope !== "intake:text",
+              ))) ||
           (body.scope !== undefined &&
             body.scope !== "identity:resolve" &&
             body.scope !== "intake:text") ||
@@ -68,16 +79,24 @@ export async function integrationCredentials(
     const key = creating
       ? `kgsvc_${randomBytes(32).toString("base64url")}`
       : null;
-    if (creating && body.scope === "intake:text") {
-      const created = await client.rpc("create_text_transfer_credential", {
-        p_actor: access.actor,
-        p_session: access.sessionId,
-        p_name: body.name,
-        p_hash: hashApiKey(key!),
-        p_prefix: key!.slice(0, 13),
-        p_expires: body.expiresAt,
-        p_reason: body.reason,
-      });
+    const scopes = Array.isArray(body.scopes)
+      ? body.scopes
+      : [body.scope ?? "identity:resolve"];
+    if (creating && (scopes.length === 2 || scopes[0] === "intake:text")) {
+      const created = await client.rpc(
+        scopes.length === 2
+          ? "create_multi_scope_credential"
+          : "create_text_transfer_credential",
+        {
+          p_actor: access.actor,
+          p_session: access.sessionId,
+          p_name: body.name,
+          p_hash: hashApiKey(key!),
+          p_prefix: key!.slice(0, 13),
+          p_expires: body.expiresAt,
+          p_reason: body.reason,
+        },
+      );
       if (created.error)
         return reply(
           { error: "Credential operation unavailable." },

@@ -71,7 +71,7 @@ export function IntegrationCredentials() {
         ? { id, reason }
         : {
             name: String(fields.get("name")).trim(),
-            scope: fields.get("scope"),
+            scopes: fields.getAll("scopes"),
             expiresAt:
               fields.get("days") === "never"
                 ? null
@@ -134,15 +134,22 @@ export function IntegrationCredentials() {
               Name
               <input name="name" required maxLength={80} />
             </label>
-            <label>
-              Scope
-              <Select name="scope" aria-label="Scope">
-                <option value="identity:resolve">
-                  Resolve identities and preview intake
-                </option>
-                <option value="intake:text">Stage text transfers</option>
-              </Select>
-            </label>
+            <fieldset>
+              <legend>Permissions</legend>
+              <label>
+                <input
+                  type="checkbox"
+                  name="scopes"
+                  value="identity:resolve"
+                  defaultChecked
+                />{" "}
+                Resolve identities and preview intake
+              </label>
+              <label>
+                <input type="checkbox" name="scopes" value="intake:text" />{" "}
+                Stage text transfers
+              </label>
+            </fieldset>
             <label>
               Expiration
               <Select name="days" aria-label="Expiration" defaultValue="never">
@@ -180,7 +187,7 @@ export function IntegrationCredentials() {
           <article key={row.id}>
             <h3>{row.name}</h3>
             <p>
-              {row.scope} ·{" "}
+              {row.scope.split("+").join(", ")} ·{" "}
               {row.expiresAt
                 ? `Expires ${new Date(row.expiresAt).toLocaleString()}`
                 : "Never expires"}
