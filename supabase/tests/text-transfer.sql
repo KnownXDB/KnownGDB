@@ -4,6 +4,15 @@ set local role service_role;
 do $$
 declare actor uuid:='00000000-0000-4000-8000-000000000001'; session uuid:='00000000-0000-4000-8000-000000000081'; hash text:=repeat('a',64); identity_hash text:=repeat('b',64); other_hash text:=repeat('c',64); client uuid:=gen_random_uuid(); transfer uuid; result jsonb; full_text text:=repeat('ñ',550000); data bytea; part bytea; i integer; size integer;
 begin
+ perform public.create_multi_scope_credential(actor,session,'Combined test',repeat('d',64),'kgsvc_xyz1234',null,'Test');
+ assert public.consume_integration_credential(repeat('d',64),'identity:resolve')='allowed';
+ assert public.consume_integration_credential(repeat('d',64),'intake:text')='allowed';
+ assert public.consume_integration_credential(repeat('d',64),'unknown')='denied';
+ result:=public.stage_text_transfer(repeat('d',64),'create',null,gen_random_uuid(),0,encode(sha256(''::bytea),'hex'),null,null,null); assert result->>'status'='pending';
+ update catalog.integration_credentials set revoked_at=clock_timestamp() where key_hash=repeat('d',64);
+ assert public.consume_integration_credential(repeat('d',64),'identity:resolve')='denied';
+ assert public.consume_integration_credential(repeat('d',64),'intake:text')='denied';
+ result:=public.stage_text_transfer(repeat('d',64),'create',null,gen_random_uuid(),0,encode(sha256(''::bytea),'hex'),null,null,null); assert result->>'status'='denied';
  perform public.create_text_transfer_credential(actor,session,'Text test',hash,'kgsvc_abc1234',null,'Test');
  perform public.manage_integration_credential(actor,session,'create',null,'Read only',identity_hash,'kgsvc_def5678',now()+interval '30 days','Test');
  perform public.create_text_transfer_credential(actor,session,'Other test',other_hash,'kgsvc_ghi9012',now()+interval '30 days','Test');

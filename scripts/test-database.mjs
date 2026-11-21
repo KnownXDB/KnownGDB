@@ -73,7 +73,7 @@ const migrationFiles = fs
   .readdirSync("supabase/migrations")
   .filter((name) => name.endsWith(".sql"))
   .sort();
-assert.equal(migrationFiles.length, 35);
+assert.equal(migrationFiles.length, 36);
 const sql = migrationFiles.map((file) =>
   fs.readFileSync(path.join("supabase/migrations", file), "utf8"),
 );
