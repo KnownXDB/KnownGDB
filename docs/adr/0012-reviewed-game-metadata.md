@@ -62,7 +62,7 @@ approval; successful saves reload the stored representation. The public game
 expansion displays approved descriptions, credits, releases, language support and
 classification beside its existing asset-version history.
 
-Only metadata save requests receive a 128 KiB streamed JSON bound, including the
+Metadata save requests receive a 1 MiB streamed JSON bound, including the
 local Node adapter. Other JSON request limits remain 4 KiB and image upload limits
 remain 4 MiB. UI and API enforce bounded rows and field lengths; database foreign
 keys enforce game/release and typed vocabulary relationships. External URLs are
@@ -93,7 +93,7 @@ acceptance. No real game publication or account impersonation is a test shortcut
 
 Revisions preserve corrections without copying R2 objects. Normalized records
 support future filtering while the API assembles a versioned document for editing.
-Full-document saves are simpler initially but bounded to 128 KiB; pagination and
+Full-document saves are simpler initially but bounded to 1 MiB; pagination and
 incremental editing require a separate design if real catalogs exceed that bound.
 Vocabulary rename/merge tooling and a browser for historical metadata revisions
 remain future work. Historical revisions are retained in the database and audit;

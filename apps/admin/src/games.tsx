@@ -72,7 +72,7 @@ export function GameCreation({
               </label>
               <label>
                 Description
-                <textarea name="description" maxLength={1500} />
+                <textarea name="description" />
               </label>
             </fieldset>
             <button disabled={busy}>

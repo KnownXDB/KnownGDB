@@ -23,14 +23,14 @@ approved metadata of a published item and returns the public revision ID and
 per-field differences. Unknown fields and invalid proposals are rejected; an
 omitted field never means deletion. If no approved public revision is available,
 the comparison is unavailable. Pending or ambiguous identities do not trigger a
-metadata read. This slice does not compare credits, releases, assets or unpublished revisions,
+metadata read. This slice does not compare detailed releases, assets or unpublished revisions,
 and does not authorize updates.
 
 Localized proposals can include up to eight canonical language tags and supplied
 title, summary or description fields. Each provided field is compared with the
 published localization of that language; missing languages are represented as
 absent, and omitted fields do not mean deletion. Explicit empty summary or
-description remains a proposed value. Preview requests are limited to 128 KiB
+description remains a proposed value. Preview requests are limited to 1 MiB
 in both the API and local Node adapter. No pending revision is queried.
 
 Optional `credits` compare explicit organization UUID, role, release UUID and

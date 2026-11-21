@@ -9,7 +9,7 @@ import { verifyAdmin } from "./admin-access.ts";
 import { readJsonObject } from "./request-body.ts";
 import type { ApiEnvironment } from "./handler.ts";
 
-export const metadataBodyLimit = 128 * 1024;
+export const metadataBodyLimit = 1024 * 1024;
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const bad = () => {
@@ -37,6 +37,10 @@ const text = (v: unknown, max: number, required = false): string => {
   )
     bad();
   return (v as string).trim();
+};
+const longText = (v: unknown): string => {
+  if (typeof v !== "string" || v.includes("\u0000")) bad();
+  return v as string;
 };
 const identifier = (v: unknown) => {
   if (typeof v !== "string" || !uuid.test(v)) bad();
@@ -110,8 +114,8 @@ export function validateMetadata(value: unknown): GameMetadata {
     return {
       language: language(l.language),
       title: text(l.title, 300, true),
-      summary: text(l.summary, 500),
-      description: text(l.description, 20000),
+      summary: longText(l.summary),
+      description: longText(l.description),
       aliases,
     };
   });

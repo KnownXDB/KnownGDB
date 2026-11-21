@@ -113,7 +113,7 @@ test("intake preview has a route-specific bounded body limit", async () => {
       (
         await fetch(`${origin}/api/v1/integrations/intake/preview`, {
           method: "POST",
-          body: "x".repeat(128 * 1024 + 1),
+          body: "x".repeat(1024 * 1024 + 1),
         })
       ).status,
       413,

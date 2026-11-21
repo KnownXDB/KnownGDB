@@ -1,3 +1,4 @@
+import { metadataBodyLimit } from "./game-metadata.ts";
 import { createClient } from "@supabase/supabase-js";
 import { verifyAdmin } from "./admin-access.ts";
 import { readJsonObject } from "./request-body.ts";
@@ -148,7 +149,7 @@ export async function administrativeGames(
       );
       return reply({ games });
     }
-    const body = await readJsonObject(request);
+    const body = await readJsonObject(request, metadataBodyLimit);
     if (body instanceof Response) return body;
     if (
       Object.keys(body).some(
@@ -164,7 +165,7 @@ export async function administrativeGames(
       body.source_reference.length > 2000 ||
       (body.description != null &&
         (typeof body.description !== "string" ||
-          body.description.length > 1500))
+          body.description.includes("\u0000")))
     )
       return reply(
         { error: "Enter a title, language and source reference." },

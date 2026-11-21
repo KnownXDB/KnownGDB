@@ -524,7 +524,7 @@ test("intake field comparison only reads published metadata for verified identit
                 ],
                 localizations: [
                   { language: "en", title: "Name", description: "New" },
-                  { language: "es", summary: "Resumen" },
+                  { language: "es", summary: `  ${"Resumen".repeat(100)}  ` },
                 ],
               },
             },
@@ -560,7 +560,7 @@ test("intake field comparison only reads published metadata for verified identit
         language: "es",
         field: "summary",
         current: null,
-        proposed: "Resumen",
+        proposed: `  ${"Resumen".repeat(100)}  `,
         changed: true,
       },
     ]);
