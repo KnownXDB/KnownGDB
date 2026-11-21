@@ -492,7 +492,6 @@ export function GameMetadataEditor({
                         Short summary {i + 1}
                         <textarea
                           aria-label={`Short summary ${i + 1}`}
-                          maxLength={500}
                           value={l.summary}
                           onChange={(e) =>
                             edit((d) => {
@@ -506,7 +505,6 @@ export function GameMetadataEditor({
                         <textarea
                           aria-label={`Long description ${i + 1}`}
                           rows={5}
-                          maxLength={20000}
                           value={l.description}
                           onChange={(e) =>
                             edit((d) => {

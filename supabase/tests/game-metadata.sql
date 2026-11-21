@@ -7,7 +7,7 @@ set local role service_role;
 do $$
 declare actor uuid:='00000000-0000-4000-8000-000000000001'; session uuid:='00000000-0000-4000-8000-000000000031';
   moderator uuid:='00000000-0000-4000-8000-000000000032'; mod_session uuid:='00000000-0000-4000-8000-000000000033';
-  game uuid; org uuid; publisher uuid; platform uuid; genre uuid; first uuid; second uuid; stamp timestamptz; payload jsonb; result jsonb;
+  game uuid; org uuid; publisher uuid; platform uuid; genre uuid; first uuid; second uuid; third uuid; stamp timestamptz; payload jsonb; result jsonb;
 begin
   game:=public.create_game_draft(actor,session,'{"title":"Original fixture title","language":"en","source_reference":"Original source"}');
   org:=(public.admin_metadata_terms(actor,session,'organization','Fixture studio','Studio source')->>'id')::uuid;
@@ -50,5 +50,14 @@ begin
   if has_function_privilege('anon','public.published_game_metadata(uuid)','execute') or has_function_privilege('authenticated','public.save_game_metadata(uuid,uuid,uuid,uuid,jsonb,text,numeric,text)','execute') then raise exception 'Browser RPC exposed';end if;
   if exists(select 1 from catalog.asset_versions where game_id=game) then raise exception 'Metadata created asset versions';end if;
   if public.admin_game_metadata(actor,session,game)->'revision'->>'id'<>second::text then raise exception 'Admin cannot read pending revision';end if;
+  payload:=jsonb_set(payload,'{localizations,0,summary}',to_jsonb('  '||repeat('S',1000)||'  '));
+  payload:=jsonb_set(payload,'{localizations,0,description}',to_jsonb('  '||repeat('D',25000)||'  '));
+  third:=public.save_game_metadata(actor,session,game,second,payload,'Long text source',0.9,'Preserve full text');
+  perform public.approve_game_metadata(actor,session,game,third,'Reviewed long text');
+  if (select summary from catalog.metadata_localizations where revision_id=third and language='en') <> '  '||repeat('S',1000)||'  ' then raise exception 'Summary changed'; end if;
+  if (select description from catalog.game_localizations where game_id=game and language='en') <> '  '||repeat('D',25000)||'  ' then raise exception 'Published description changed'; end if;
+  if public.published_game_metadata(game)->'data'->'localizations'->0->>'description' <> '  '||repeat('D',25000)||'  ' then raise exception 'Published projection changed'; end if;
+  perform public.create_game_draft(actor,session,jsonb_build_object('title','Long draft fixture','language','en','source_reference','Fixture source','description',repeat('x',25000)));
+
 end $$;
 reset role;

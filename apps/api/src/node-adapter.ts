@@ -34,9 +34,10 @@ export function createApiServer(
               )
             ? uploadLimit
             : incoming.method === "POST" &&
-                /^\/api\/v1\/admin\/games\/[0-9a-f-]+\/metadata$/.test(
-                  incoming.url ?? "",
-                )
+                (incoming.url === "/api/v1/admin/games" ||
+                  /^\/api\/v1\/admin\/games\/[0-9a-f-]+\/metadata$/.test(
+                    incoming.url ?? "",
+                  ))
               ? metadataBodyLimit
               : 4096;
       for await (const chunk of incoming) {

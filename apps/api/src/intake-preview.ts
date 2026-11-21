@@ -11,7 +11,7 @@ const reply = (body: unknown, status = 200) =>
       "X-Content-Type-Options": "nosniff",
     },
   });
-export const intakePreviewBodyLimit = 128 * 1024;
+export const intakePreviewBodyLimit = 1024 * 1024;
 type LocalizedProposal = {
   language: string;
   title?: string;
@@ -135,16 +135,18 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
           languages.add(row.language);
           for (const [field, max] of [
             ["title", 300],
-            ["summary", 500],
-            ["description", 20000],
+            ["summary", Infinity],
+            ["description", Infinity],
           ] as const)
             if (
               field in row &&
               (typeof row[field] !== "string" ||
                 row[field].length > max ||
-                /[\p{Cf}\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u.test(
-                  row[field],
-                ) ||
+                (field === "title"
+                  ? /[\p{Cf}\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u.test(
+                      row[field],
+                    )
+                  : row[field].includes("\u0000")) ||
                 (field === "title" && !row[field].trim()))
             )
               return reply({ error: "Invalid localized text." }, 400);
@@ -287,8 +289,10 @@ export async function previewIntake(request: Request, env: ApiEnvironment) {
                 language: row.language,
                 field,
                 current: found?.[field] ?? null,
-                proposed: row[field]!.trim(),
-                changed: found?.[field] !== row[field]!.trim(),
+                proposed: field === "title" ? row[field]!.trim() : row[field]!,
+                changed:
+                  found?.[field] !==
+                  (field === "title" ? row[field]!.trim() : row[field]!),
               }));
           });
           (comparison as { localizedFields?: unknown }).localizedFields =

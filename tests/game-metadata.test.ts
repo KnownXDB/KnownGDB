@@ -356,7 +356,7 @@ test("large descriptions pass bounded local and hosted adapters without weakenin
       413,
     );
     const other = await fetch(
-      `http://127.0.0.1:${address.port}/api/v1/admin/games`,
+      `http://127.0.0.1:${address.port}/api/v1/account/login`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -364,9 +364,39 @@ test("large descriptions pass bounded local and hosted adapters without weakenin
       },
     );
     assert.equal(other.status, 413);
+    const draft = await fetch(
+      `http://127.0.0.1:${address.port}/api/v1/admin/games`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "Long fixture",
+          language: "en",
+          source_reference: "Fixture",
+          description: " A ".repeat(9000),
+        }),
+      },
+    );
+    assert.equal(draft.status, 201);
   } finally {
     server.closeAllConnections();
     await new Promise<void>((resolve) => server.close(() => resolve()));
     await f.close();
   }
+});
+test("long metadata text preserves whitespace and Unicode", () => {
+  const input = data();
+  input.localizations[0].summary = `  ${"s".repeat(1000)}  `;
+  input.localizations[0].description = `  ${"d".repeat(25000)}\u200d  `;
+  const result = validateMetadata(input);
+  assert.equal(result.localizations[0].summary, input.localizations[0].summary);
+  assert.equal(
+    result.localizations[0].description,
+    input.localizations[0].description,
+  );
+  input.localizations[0].description = "invalid\u0000text";
+  assert.throws(() => validateMetadata(input));
 });
