@@ -30,11 +30,10 @@ begin
 end $$;
 create function public.stage_text_transfer(p_hash text,p_action text,p_transfer uuid,p_client uuid,p_size bigint,p_digest text,p_index integer,p_data bytea,p_chunk_digest text) returns jsonb
 language plpgsql security invoker set search_path=pg_catalog as $$
-declare credential uuid; auth text; transfer catalog.text_transfers; part catalog.text_transfer_chunks; assembled bytea; expected_chunks integer;
+declare credential uuid; transfer catalog.text_transfers; part catalog.text_transfer_chunks; assembled bytea; expected_chunks integer;
 begin
- auth:=public.consume_integration_credential(p_hash,'intake:text');
- if auth <> 'allowed' then return jsonb_build_object('status',auth); end if;
- select id into credential from catalog.integration_credentials where key_hash=p_hash and scope='intake:text';
+ select id into credential from catalog.integration_credentials where key_hash=p_hash and scope='intake:text' and revoked_at is null and expires_at>clock_timestamp() for update;
+ if not found then return jsonb_build_object('status','denied'); end if;
  delete from catalog.text_transfers where expires_at<=clock_timestamp();
  if p_action='create' then
    if p_client is null or p_size is null or p_size not between 0 and 67108864 or p_digest is null or p_digest !~ '^[0-9a-f]{64}$' then raise invalid_parameter_value; end if;
@@ -49,7 +48,10 @@ begin
    return jsonb_build_object('status',transfer.status,'id',transfer.id);
  end if;
  select * into transfer from catalog.text_transfers where id=p_transfer and credential_id=credential and expires_at>clock_timestamp() for update;
- if not found then raise no_data_found; end if;
+ if not found then
+   if p_action='delete' then return jsonb_build_object('status','deleted'); end if;
+   raise no_data_found;
+ end if;
  if p_action='chunk' then
    expected_chunks:=ceil(transfer.expected_size::numeric/262144)::integer;
    if p_index is null or p_index<0 or p_index>=expected_chunks or p_data is null or octet_length(p_data)<>least(262144,transfer.expected_size-p_index::bigint*262144) or p_chunk_digest is null or p_chunk_digest !~ '^[0-9a-f]{64}$' or encode(sha256(p_data),'hex')<>p_chunk_digest then raise invalid_parameter_value; end if;

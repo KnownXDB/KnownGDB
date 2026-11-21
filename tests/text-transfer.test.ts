@@ -6,15 +6,20 @@ import { once } from "node:events";
 import { handleRequest } from "../apps/api/src/handler.ts";
 test("text transfer validates chunks and sends bytes only after credential framing", async () => {
   let calls = 0;
-  let result = "stored";
+  let authorizations = 0;
+  let result = "allowed";
   let received: Record<string, unknown> = {};
   const server = createServer(async (req, res) => {
     let raw = "";
     for await (const chunk of req) raw += chunk;
+    res.setHeader("Content-Type", "application/json");
+    if (req.url?.endsWith("/consume_integration_credential")) {
+      authorizations++;
+      return res.end(JSON.stringify(result));
+    }
     calls++;
     received = JSON.parse(raw);
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify({ status: result }));
+    res.end(JSON.stringify({ status: "stored" }));
   });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -60,6 +65,7 @@ test("text transfer validates chunks and sends bytes only after credential frami
     );
     assert.equal(response.status, 400);
     assert.equal(calls, 1);
+    assert.equal(authorizations, 2);
     result = "limited";
     response = await handleRequest(request({ action: "complete", id }), env);
     assert.equal(response.status, 429);
@@ -69,7 +75,8 @@ test("text transfer validates chunks and sends bytes only after credential frami
       env,
     );
     assert.equal(response.status, 401);
-    assert.equal(calls, 2);
+    assert.equal(calls, 1);
+    assert.equal(authorizations, 3);
   } finally {
     server.closeAllConnections();
     await new Promise<void>((resolve) => server.close(() => resolve()));

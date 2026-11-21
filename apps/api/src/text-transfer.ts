@@ -29,6 +29,33 @@ export async function textTransferRequest(
   if (!key) return reply({ error: "Integration credential required." }, 401);
   if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY)
     return reply({ error: "Transfer service unavailable." }, 503);
+  const client = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    db: { retry: false },
+  });
+  try {
+    const consumed = await client.rpc("consume_integration_credential", {
+      p_hash: hashApiKey(key),
+      p_scope: "intake:text",
+    });
+    if (consumed.error)
+      return reply({ error: "Credential verification unavailable." }, 503);
+    if (consumed.data === "limited")
+      return Response.json(
+        { error: "Rate limit reached." },
+        {
+          status: 429,
+          headers: { "Retry-After": "60", "Cache-Control": "no-store" },
+        },
+      );
+    if (consumed.data !== "allowed")
+      return reply(
+        { error: "Integration credential invalid or revoked." },
+        401,
+      );
+  } catch {
+    return reply({ error: "Credential verification unavailable." }, 503);
+  }
   const body = await readJsonObject(request, textTransferBodyLimit);
   if (body instanceof Response) return body;
   const { action, id, clientId, byteLength, sha256, index, data } = body;
@@ -80,10 +107,6 @@ export async function textTransferRequest(
       return reply({ error: "Invalid transfer request." }, 400);
   } else return reply({ error: "Invalid transfer request." }, 400);
   try {
-    const client = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false },
-      db: { retry: false },
-    });
     const result = await client.rpc("stage_text_transfer", {
       p_hash: hashApiKey(key),
       p_action: action,
