@@ -10,6 +10,7 @@ import {
 import { Account } from "@knowngdb/ui/account";
 import { AssetSubmission } from "@knowngdb/ui/submission";
 import { GameCreation } from "./games.tsx";
+import { IntegrationCredentials } from "./integration-credentials";
 import { GamesView } from "./game-list.tsx";
 import { StoreObservations } from "./store-observations.tsx";
 import { VersionAdministration } from "./versions.tsx";
@@ -23,7 +24,11 @@ function App() {
     parts = route.split("/");
   const changed = () => setRevision((v) => v + 1);
   return (
-    <Workspace admin route={route}>
+    <Workspace
+      admin
+      route={route}
+      showIntegrationCredentials={role === "super_admin"}
+    >
       <div
         hidden={Boolean(role) && route !== "/account"}
         className="account-view"
@@ -87,6 +92,8 @@ function App() {
               />
               <VersionAdministration role={role} />
             </>
+          ) : route === "/integration-credentials" && role === "super_admin" ? (
+            <IntegrationCredentials />
           ) : route === "/stores" ? (
             <StoreObservations role={role} />
           ) : (
